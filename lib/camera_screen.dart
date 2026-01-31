@@ -42,8 +42,14 @@ class _CameraScreenState extends State<CameraScreen> {
       return;
     }
 
+    // Select back camera by default, fallback to first camera
+    final backCamera = cameras.firstWhere(
+      (camera) => camera.lensDirection == CameraLensDirection.back,
+      orElse: () => cameras[0],
+    );
+
     _controller = CameraController(
-      cameras[0],
+      backCamera,
       ResolutionPreset.high,
     );
 
@@ -72,8 +78,13 @@ class _CameraScreenState extends State<CameraScreen> {
       // Move the file to our desired location
       final tempFile = File(image.path);
       await tempFile.copy(imagePath);
+      
       // Clean up the temporary file
-      await tempFile.delete();
+      try {
+        await tempFile.delete();
+      } catch (e) {
+        debugPrint('Failed to delete temporary file: $e');
+      }
 
       setState(() {
         _lastPhotoPath = imagePath;
@@ -82,9 +93,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Photo saved to: $imagePath'),
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('Photo saved successfully'),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -125,9 +136,9 @@ class _CameraScreenState extends State<CameraScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Photo saved to: $imagePath'),
-              duration: const Duration(seconds: 2),
+            const SnackBar(
+              content: Text('Photo saved successfully'),
+              duration: Duration(seconds: 2),
             ),
           );
         }
@@ -303,10 +314,10 @@ class _CameraScreenState extends State<CameraScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Last photo saved to:\n${_lastPhotoPath ?? 'None'}',
+            const Text(
+              'Photo saved successfully',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 16),
           ] else ...[
