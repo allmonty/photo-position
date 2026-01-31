@@ -45,9 +45,19 @@ class _OverlayScreenState extends State<OverlayScreen> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.02), // Almost transparent background so overlay is visible
+      color: Colors.black.withOpacity(0.15), // More visible background so users can see the overlay
       child: Stack(
         children: [
+          // Full screen tap area to make it obvious overlay is active
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _toggleControls,
+              child: Container(
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+          
           // The draggable overlay shape
           Positioned(
             left: _overlayPosition.dx,
@@ -61,19 +71,25 @@ class _OverlayScreenState extends State<OverlayScreen> {
                   );
                 });
               },
-              onTap: _toggleControls,
               child: Container(
                 width: _overlaySize,
                 height: _overlaySize,
                 decoration: BoxDecoration(
-                  color: Colors.transparent, // Keep shape interior transparent
+                  color: Colors.white.withOpacity(0.1), // Slight fill to make shape more visible
                   shape: _overlayShape == OverlayShape.circle
                       ? BoxShape.circle
                       : BoxShape.rectangle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.9), // More opaque border for better visibility
-                    width: 4, // Slightly thicker for visibility
+                    color: Colors.red, // Bright red border for maximum visibility
+                    width: 5, // Thicker border
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
               ),
             ),
