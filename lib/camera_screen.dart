@@ -23,6 +23,15 @@ class _CameraScreenState extends State<CameraScreen> {
   OverlayShape _overlayShape = OverlayShape.circle;
   double _overlaySize = 200.0;
   
+  // Camera control variables
+  double _currentZoom = 1.0;
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  FlashMode _flashMode = FlashMode.off;
+  double _currentExposure = 0.0;
+  double _minExposure = 0.0;
+  double _maxExposure = 0.0;
+  
   // Native camera variables
   final ImagePicker _picker = ImagePicker();
   
@@ -51,9 +60,22 @@ class _CameraScreenState extends State<CameraScreen> {
     _controller = CameraController(
       backCamera,
       ResolutionPreset.high,
+      enableAudio: false,
     );
 
-    _initializeControllerFuture = _controller!.initialize();
+    _initializeControllerFuture = _controller!.initialize().then((_) async {
+      // Get zoom limits
+      _maxZoom = await _controller!.getMaxZoomLevel();
+      _minZoom = await _controller!.getMinZoomLevel();
+      _currentZoom = _minZoom;
+      
+      // Get exposure limits
+      _maxExposure = await _controller!.getMaxExposureOffset();
+      _minExposure = await _controller!.getMinExposureOffset();
+      _currentExposure = 0.0;
+      
+      setState(() {});
+    });
     setState(() {});
   }
 
@@ -61,6 +83,66 @@ class _CameraScreenState extends State<CameraScreen> {
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  Future<void> _setZoom(double zoom) async {
+    if (_controller != null && _controller!.value.isInitialized) {
+      await _controller!.setZoomLevel(zoom);
+      setState(() {
+        _currentZoom = zoom;
+      });
+    }
+  }
+
+  Future<void> _setExposure(double exposure) async {
+    if (_controller != null && _controller!.value.isInitialized) {
+      await _controller!.setExposureOffset(exposure);
+      setState(() {
+        _currentExposure = exposure;
+      });
+    }
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_controller != null && _controller!.value.isInitialized) {
+      FlashMode newMode;
+      switch (_flashMode) {
+        case FlashMode.off:
+          newMode = FlashMode.auto;
+          break;
+        case FlashMode.auto:
+          newMode = FlashMode.always;
+          break;
+        case FlashMode.always:
+          newMode = FlashMode.off;
+          break;
+        default:
+          newMode = FlashMode.off;
+      }
+      
+      await _controller!.setFlashMode(newMode);
+      setState(() {
+        _flashMode = newMode;
+      });
+    }
+  }
+
+  Future<void> _onTapToFocus(TapUpDetails details, BoxConstraints constraints) async {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return;
+    }
+
+    final offset = Offset(
+      details.localPosition.dx / constraints.maxWidth,
+      details.localPosition.dy / constraints.maxHeight,
+    );
+
+    try {
+      await _controller!.setFocusPoint(offset);
+      await _controller!.setExposurePoint(offset);
+    } catch (e) {
+      debugPrint('Error setting focus/exposure point: $e');
+    }
   }
 
   Future<void> _takePictureCustom() async {
@@ -214,82 +296,183 @@ class _CameraScreenState extends State<CameraScreen> {
             future: _initializeControllerFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
-                return Stack(
-                  children: [
-                    // Camera Preview
-                    SizedBox.expand(
-                      child: CameraPreview(_controller!),
-                    ),
-                    // Overlay shape (this will NOT appear in the photo)
-                    _buildOverlay(),
-                    // Controls
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Shape selector
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                        // Camera Preview with tap to focus
+                        GestureDetector(
+                          onTapUp: (details) => _onTapToFocus(details, constraints),
+                          child: SizedBox.expand(
+                            child: CameraPreview(_controller!),
+                          ),
+                        ),
+                        // Overlay shape (this will NOT appear in the photo)
+                        _buildOverlay(),
+                        // Flash button (top left)
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                _flashMode == FlashMode.off
+                                    ? Icons.flash_off
+                                    : _flashMode == FlashMode.auto
+                                        ? Icons.flash_auto
+                                        : Icons.flash_on,
+                                color: Colors.white,
+                              ),
+                              onPressed: _toggleFlash,
+                            ),
+                          ),
+                        ),
+                        // Zoom and Exposure controls (right side)
+                        Positioned(
+                          right: 16,
+                          top: 100,
+                          bottom: 200,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Zoom slider
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.zoom_in, 
+                                        color: Colors.white, size: 20),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      height: 150,
+                                      child: RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Slider(
+                                          value: _currentZoom,
+                                          min: _minZoom,
+                                          max: _maxZoom,
+                                          onChanged: (value) => _setZoom(value),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Icon(Icons.zoom_out, 
+                                        color: Colors.white, size: 20),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              // Exposure slider
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.brightness_high, 
+                                        color: Colors.white, size: 20),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      height: 150,
+                                      child: RotatedBox(
+                                        quarterTurns: 3,
+                                        child: Slider(
+                                          value: _currentExposure,
+                                          min: _minExposure,
+                                          max: _maxExposure,
+                                          onChanged: (value) => _setExposure(value),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Icon(Icons.brightness_low, 
+                                        color: Colors.white, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Controls
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            color: Colors.black54,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                _buildShapeButton(
-                                  OverlayShape.none,
-                                  Icons.close,
-                                  'No Overlay',
+                                // Shape selector
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildShapeButton(
+                                      OverlayShape.none,
+                                      Icons.close,
+                                      'No Overlay',
+                                    ),
+                                    _buildShapeButton(
+                                      OverlayShape.circle,
+                                      Icons.circle_outlined,
+                                      'Circle',
+                                    ),
+                                    _buildShapeButton(
+                                      OverlayShape.square,
+                                      Icons.square_outlined,
+                                      'Square',
+                                    ),
+                                  ],
                                 ),
-                                _buildShapeButton(
-                                  OverlayShape.circle,
-                                  Icons.circle_outlined,
-                                  'Circle',
-                                ),
-                                _buildShapeButton(
-                                  OverlayShape.square,
-                                  Icons.square_outlined,
-                                  'Square',
+                                const SizedBox(height: 16),
+                                // Size slider
+                                if (_overlayShape != OverlayShape.none)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.photo_size_select_small,
+                                          color: Colors.white),
+                                      Expanded(
+                                        child: Slider(
+                                          value: _overlaySize,
+                                          min: 100,
+                                          max: 400,
+                                          divisions: 30,
+                                          label: _overlaySize.round().toString(),
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _overlaySize = value;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      const Icon(Icons.photo_size_select_large,
+                                          color: Colors.white),
+                                    ],
+                                  ),
+                                const SizedBox(height: 16),
+                                // Capture button
+                                FloatingActionButton(
+                                  onPressed: _takePictureCustom,
+                                  child: const Icon(Icons.camera_alt, size: 32),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            // Size slider
-                            if (_overlayShape != OverlayShape.none)
-                              Row(
-                                children: [
-                                  const Icon(Icons.photo_size_select_small,
-                                      color: Colors.white),
-                                  Expanded(
-                                    child: Slider(
-                                      value: _overlaySize,
-                                      min: 100,
-                                      max: 400,
-                                      divisions: 30,
-                                      label: _overlaySize.round().toString(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _overlaySize = value;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const Icon(Icons.photo_size_select_large,
-                                      color: Colors.white),
-                                ],
-                              ),
-                            const SizedBox(height: 16),
-                            // Capture button
-                            FloatingActionButton(
-                              onPressed: _takePictureCustom,
-                              child: const Icon(Icons.camera_alt, size: 32),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 );
               } else {
                 return const Center(child: CircularProgressIndicator());
