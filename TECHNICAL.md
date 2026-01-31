@@ -2,38 +2,35 @@
 
 ## Architecture Overview
 
-This Flutter app provides camera functionality with positioning overlays to help users take aligned photos.
+This Flutter app provides native camera functionality using the device's built-in camera application.
 
 ### Key Components
 
 #### 1. Main App (`lib/main.dart`)
-- Initializes available cameras on app startup
 - Sets up the MaterialApp with the CameraScreen as home
+- Simple entry point without camera initialization
 
 #### 2. Camera Screen (`lib/camera_screen.dart`)
-- **CameraController**: Manages camera functionality
-- **Overlay System**: Renders shapes (circle/square) on top of camera preview
-- **UI Controls**: Buttons for shape selection and size adjustment
+- **ImagePicker**: Launches the native camera app and receives captured images
+- **Image Preview**: Displays the last captured photo
+- **UI Controls**: Button to open the native camera
 
-### How Overlays Don't Appear in Photos
+### How Native Camera Works
 
-The overlay system uses Flutter's widget layering with a `Stack`:
+The app uses the `image_picker` package to launch the device's native camera application:
 
-```
-Stack
-├── CameraPreview (layer 0 - actual camera feed)
-├── Overlay Widget (layer 1 - UI only, not in camera stream)
-└── Controls (layer 2 - UI buttons and sliders)
-```
-
-When `takePicture()` is called on the `CameraController`, it captures only the camera stream data (layer 0), which does not include the Flutter widgets rendered on top. This ensures the overlay appears for alignment but not in the saved photo.
+1. User taps "Open Camera" button
+2. App calls `ImagePicker.pickImage(source: ImageSource.camera)`
+3. Native camera app opens with all device-specific features
+4. User takes photo using native camera controls
+5. Photo is returned to the app
+6. App saves the photo and displays it
 
 ### Features
 
-1. **Shape Selection**: Toggle between no overlay, circle, or square
-2. **Size Adjustment**: Slider to resize overlay from 100 to 400 pixels
-3. **Visual Feedback**: Selected shape is highlighted in blue
-4. **Photo Capture**: Standard camera capture that saves to device storage
+1. **Native Camera**: Full access to all device camera features (HDR, filters, panorama, etc.)
+2. **Photo Preview**: View captured photos within the app
+3. **Photo Storage**: Automatic saving to device storage
 
 ### File Structure
 
@@ -58,7 +55,7 @@ pubspec.yaml           - Dependencies (camera, path_provider, path)
 
 ### Dependencies
 
-- **camera**: ^0.10.5+5 - Camera plugin for Flutter
+- **image_picker**: ^1.0.7 - Native camera and gallery access
 - **path_provider**: ^2.1.1 - Get device directories for saving photos
 - **path**: ^1.8.3 - Path manipulation utilities
 
@@ -94,28 +91,24 @@ pubspec.yaml           - Dependencies (camera, path_provider, path)
 
 ### Testing
 
-Since this app requires camera hardware, it must be tested on physical devices. Key test scenarios:
+Since this app uses the native camera, it must be tested on physical devices. Key test scenarios:
 
-1. **Overlay Visibility**: Verify overlays appear on preview
-2. **Photo Capture**: Confirm overlays don't appear in saved photos
-3. **Shape Switching**: Test all three overlay options (none, circle, square)
-4. **Size Adjustment**: Verify slider changes overlay size
+1. **Camera Launch**: Verify native camera opens correctly
+2. **Photo Capture**: Confirm photos can be taken and returned to the app
+3. **Photo Display**: Verify captured photos display correctly
+4. **Photo Storage**: Test that photos are saved to the correct location
 5. **Permissions**: Test camera permission requests on first launch
 
 ### Known Limitations
 
 - Requires physical device with camera (won't work in emulators)
 - Photos are saved to app's documents directory (not photo gallery by default)
-- Front/back camera switching not implemented (uses default camera)
-- Flash controls not implemented
+- No overlay features (trade-off for native camera access)
 
 ### Future Enhancements
 
 Potential improvements:
-- Gallery integration to view saved photos
-- Camera switching (front/back)
-- Flash/torch controls
-- Grid overlay option (rule of thirds)
+- Gallery integration to view all saved photos
 - Save directly to photo gallery
-- Multiple overlay colors
-- Opacity adjustment for overlays
+- Share photos to other apps
+- Delete photos from within the app

@@ -2,99 +2,58 @@
 
 ## App Screenshots (Mockup)
 
-### Main Camera View with Circle Overlay
+### Main Screen - No Photo Taken Yet
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
+│  Photo Position                             │
 ├─────────────────────────────────────────────┤
 │                                             │
 │                                             │
 │                                             │
-│               ┌─────────┐                   │
-│               │         │                   │
-│               │    ○    │  ← Circle Overlay │
-│               │         │     (white border)│
-│               └─────────┘                   │
+│                  📷                          │
+│            (Camera Icon)                    │
+│                                             │
+│         No photos taken yet                 │
+│                                             │
+│    Tap the button below to open             │
+│           the camera                        │
 │                                             │
 │                                             │
 │                                             │
 ├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
 │                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (white)   (BLUE ✓)   (white)              │
+│       ╭───────────────────────╮             │
+│       │ 📷  Open Camera       │             │
+│       ╰───────────────────────╯             │
 │                                             │
-│  ▁▁ ────────●─────── ▁▁  Size: 200         │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
 └─────────────────────────────────────────────┘
 ```
 
-### Main Camera View with Square Overlay
+### Main Screen - After Taking Photo
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
+│  Photo Position                             │
 ├─────────────────────────────────────────────┤
 │                                             │
+│  ┌─────────────────────────────────────┐   │
+│  │                                     │   │
+│  │                                     │   │
+│  │     [Captured Photo Preview]        │   │
+│  │                                     │   │
+│  │                                     │   │
+│  └─────────────────────────────────────┘   │
 │                                             │
-│                                             │
-│               ┌─────────┐                   │
-│               │         │                   │
-│               │    ▢    │  ← Square Overlay│
-│               │         │     (white border)│
-│               └─────────┘                   │
-│                                             │
-│                                             │
-│                                             │
-├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
-│                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (white)   (white)    (BLUE ✓)             │
-│                                             │
-│  ▁▁ ────────●─────── ▁▁  Size: 200         │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
-└─────────────────────────────────────────────┘
-```
-
-### No Overlay View
-
-```
-┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
-├─────────────────────────────────────────────┤
-│                                             │
-│                                             │
-│                                             │
-│          [CLEAN CAMERA VIEW]                │
-│                                             │
-│            No overlay shown                 │
-│                                             │
-│                                             │
-│                                             │
-│                                             │
+│  Last photo saved to:                       │
+│  /data/.../1234567890.jpg                   │
 │                                             │
 ├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
 │                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (BLUE ✓)  (white)    (white)              │
+│       ╭───────────────────────╮             │
+│       │ 📷  Open Camera       │             │
+│       ╰───────────────────────╯             │
 │                                             │
-│         (Size slider hidden)                │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
 └─────────────────────────────────────────────┘
 ```
 
@@ -114,129 +73,159 @@
        │              │
        ▼              ▼
 ┌─────────────┐  ┌──────────────┐
-│Camera Ready │  │ Error Message│
+│ Main Screen │  │ Error Message│
 └──────┬──────┘  └──────────────┘
        │
        ▼
 ┌──────────────────┐
-│ Select Overlay   │◄───────┐
-│ • Circle         │        │
-│ • Square         │        │
-│ • None           │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Adjust Size      │        │
-│ (slider)         │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Position Subject │        │
-│ within overlay   │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Tap Camera       │        │
-│ Button           │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Photo Captured   │        │
-│ (NO overlay in   │        │
-│  saved image!)   │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Success Message  │        │
-└──────┬───────────┘        │
-       │                    │
-       └────────────────────┘
+│ Tap "Open Camera"│
+└──────┬───────────┘
+       │
+       ▼
+┌──────────────────────┐
+│ Native Camera Opens  │◄───────┐
+│ with all features:   │        │
+│ • HDR mode           │        │
+│ • Filters            │        │
+│ • Panorama           │        │
+│ • Flash              │        │
+│ • Burst mode         │        │
+│ • Night mode         │        │
+│ • And more...        │        │
+└──────┬───────────────┘        │
+       │                        │
+       ▼                        │
+┌──────────────────┐            │
+│ User Takes Photo │            │
+│ (Native Camera)  │            │
+└──────┬───────────┘            │
+       │                        │
+       ▼                        │
+┌──────────────────┐            │
+│ Photo Returned   │            │
+│ to App           │            │
+└──────┬───────────┘            │
+       │                        │
+       ▼                        │
+┌──────────────────┐            │
+│ Photo Displayed  │            │
+│ with Success     │            │
+│ Message          │            │
+└──────┬───────────┘            │
+       │                        │
+       └────────────────────────┘
     Take another photo
 ```
 
 ## Color Scheme
 
-- **Background**: Black (camera controls area)
-- **Selected Button**: Blue (#2196F3)
-- **Unselected Button**: White
-- **Overlay Border**: White with 70% opacity
-- **Border Width**: 3 pixels
-- **AppBar**: Black87
+- **Primary Color**: Blue (#2196F3)
+- **AppBar**: Blue
+- **Background**: White
+- **Text**: Black/Grey
+- **Icons**: Grey (placeholder state), Blue (active elements)
 
 ## Typography
 
 - **App Title**: Default Material AppBar style
-- **Button Labels**: 12px
-- **Size Label**: Default Material slider label
+- **Heading**: 18px (placeholder text)
+- **Body**: 14px (helper text)
+- **Caption**: 12px (file path)
 
 ## Interactions
 
-### Buttons
-- **Tap**: Switch overlay shape
-- **Visual Feedback**: Color changes from white to blue when selected
+### Open Camera Button
+- **Tap**: Launches native camera application
+- **Visual Feedback**: Material ripple effect
+- **Result**: Returns captured photo to app
 
-### Slider
-- **Drag**: Adjust overlay size
-- **Range**: 100 to 400 pixels
-- **Divisions**: 30 steps
-- **Label**: Shows current size
-
-### Camera Button
-- **Tap**: Capture photo
-- **Feedback**: SnackBar notification with save path
+### Native Camera
+- User interacts with device's native camera app
+- All device-specific features available
+- Photo captured using native controls
+- Photo automatically returned to app
 
 ## Responsive Behavior
 
-- Overlay is always centered on screen
-- Controls panel maintains fixed height at bottom
-- Camera preview fills remaining space
-- Overlay size is absolute (not percentage-based) for consistency across devices
+- Photo preview scales to fit available space
+- Maintains aspect ratio
+- Works on all screen sizes and orientations
+- Floating action button remains accessible
 
 ## Accessibility
 
-- Large touch targets for all buttons
-- Clear visual feedback for selections
-- Descriptive labels for all controls
-- High contrast colors (white on black)
+- Large touch target for camera button
+- Clear visual feedback
+- Descriptive labels and instructions
+- High contrast for readability
 
 ## Performance
 
-- Smooth overlay rendering (no impact on camera performance)
-- Instant shape switching
-- Real-time size adjustment
-- Fast photo capture
+- Instant app launch (no camera initialization)
+- Native camera provides optimal performance
+- Fast photo loading and display
+- Minimal memory footprint
 
 ## Technical Notes
 
-### Why No Gallery?
-To keep the implementation minimal and focused on the core feature (aligned photography), a gallery view was not included. Photos are saved to the app's documents directory and can be accessed through the device's file manager.
+### Why Native Camera?
 
-### Why No Camera Switching?
-The initial implementation uses the default (back) camera to keep the code simple. Front camera switching can be easily added if needed.
+The native camera approach provides several advantages:
+- **Full Features**: Access to all device-specific camera features
+- **Better Performance**: Optimized by device manufacturer
+- **Familiar UI**: Users already know how to use it
+- **Lower Maintenance**: No need to implement camera features
+- **Better Quality**: Native processing and algorithms
 
-### Why These Shapes?
-Circle and square cover the majority of use cases:
-- **Circle**: Faces, flowers, products, round objects
-- **Square**: Documents, frames, rectangular objects, packaging
+### Photo Storage
 
-## Example Use Case: Product Photography
+Photos are saved to the app's documents directory for privacy and simplicity. They can be accessed through:
+- The app's preview screen
+- Device file manager
+- Other apps with storage permissions
 
+### Supported Formats
+
+The native camera determines the photo format (typically JPEG). The app accepts any image format the device camera produces.
+
+## Example Use Cases
+
+### Professional Photography
 ```
-Photo 1:        Photo 2:        Photo 3:
-┌─────────┐     ┌─────────┐     ┌─────────┐
-│         │     │         │     │         │
-│  ┌───┐  │     │  ┌───┐  │     │  ┌───┐  │
-│  │ 🎁│  │     │  │ 📦│  │     │  │ 📱│  │
-│  └───┘  │     │  └───┘  │     │  └───┘  │
-│         │     │         │     │         │
-└─────────┘     └─────────┘     └─────────┘
-
-All products aligned in the exact same position!
+┌────────────────┐
+│  Native Camera │
+│                │
+│  • HDR Mode ✓  │
+│  • 48MP ✓      │
+│  • Portrait ✓  │
+│                │
+└────────────────┘
+High-quality photos with professional features
 ```
 
-Perfect for e-commerce, documentation, or any situation requiring consistent framing.
+### Quick Snapshots
+```
+┌────────────────┐
+│  One Tap       │
+│       ↓        │
+│  Native Camera │
+│       ↓        │
+│  Quick Photo!  │
+└────────────────┘
+Fast and efficient workflow
+```
+
+### Filtered Photos
+```
+┌────────────────┐
+│  Native Camera │
+│                │
+│  Apply Filter  │
+│  During Capture│
+│       ↓        │
+│  Filtered Pic! │
+└────────────────┘
+No need for post-processing
+```
+
+Perfect for any photography needs with full access to native camera capabilities!

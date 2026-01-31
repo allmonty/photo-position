@@ -1,27 +1,24 @@
 # Photo Position
 
-A Flutter photography app that helps users take multiple photos with aligned elements.
+A Flutter photography app that uses the native Android camera with all its features.
 
 ## Features
 
-- **Camera Integration**: Full camera support for taking photos
-- **Alignment Overlays**: Position circle or square overlays on the camera preview to help align objects
-- **Invisible Overlays**: Overlays appear only on the preview, not in the captured photos
-- **Adjustable Size**: Resize the overlay using a slider to match your subject
-- **Multiple Shapes**: Choose between circle, square, or no overlay
+- **Native Camera Integration**: Opens the device's native camera app with all built-in features (HDR, filters, panorama, burst mode, etc.)
+- **Photo Preview**: View the last captured photo in the app
+- **Photo Storage**: Photos are automatically saved to the app's documents directory
 
 ## How to Use
 
-1. Launch the app to open the camera view
-2. Select an overlay shape (Circle or Square) from the bottom controls
-3. Adjust the overlay size using the slider to match your subject
-4. Position your subject within the overlay
-5. Tap the camera button to capture the photo
-6. The overlay will NOT appear in the saved photo
+1. Launch the app
+2. Tap the "Open Camera" button to launch the native camera
+3. Use all the native camera features available on your device
+4. Take a photo using the native camera app
+5. The photo will be saved and displayed in the app
 
 ## Technical Details
 
-The app uses Flutter's camera plugin to capture photos. The overlay is rendered as a Flutter widget on top of the camera preview but is not part of the camera stream, ensuring it doesn't appear in the final image.
+The app uses Flutter's `image_picker` plugin to launch the native Android camera application. This provides access to all the device's camera features without needing to implement them separately.
 
 ## Setup
 
