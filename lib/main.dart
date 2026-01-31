@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = await FlutterOverlayWindow.isPermissionGranted();
     if (!status) {
       final granted = await FlutterOverlayWindow.requestPermission();
-      if (!granted && mounted) {
+      if (granted! && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Overlay permission is required to use this app'),
