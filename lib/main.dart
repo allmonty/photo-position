@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'camera_screen.dart';
 
-void main() {
+List<CameraDescription> cameras = [];
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    cameras = await availableCameras();
+  } catch (e) {
+    debugPrint('Error initializing cameras: $e');
+  }
+  
   runApp(const PhotoPositionApp());
 }
 
