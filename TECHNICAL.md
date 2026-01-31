@@ -52,9 +52,15 @@ Photo displayed and saved
 
 1. **Mode Switching**: Toggle between Custom and Native camera modes via AppBar menu
 2. **Custom Camera Features**:
-   - Shape Selection: Toggle between no overlay, circle, or square
-   - Size Adjustment: Slider to resize overlay from 100 to 400 pixels
-   - Visual Feedback: Selected shape is highlighted in blue
+   - **Overlay System**:
+     - Shape Selection: Toggle between no overlay, circle, or square
+     - Size Adjustment: Slider to resize overlay from 100 to 400 pixels
+     - Visual Feedback: Selected shape is highlighted in blue
+   - **Advanced Camera Controls**:
+     - **Zoom**: Vertical slider or pinch gesture (supports device's full zoom range)
+     - **Tap to Focus**: Tap anywhere to set focus and exposure point
+     - **Exposure**: Vertical slider for brightness adjustment
+     - **Flash**: Toggle button cycling through Off → Auto → Always On
 3. **Native Camera Features**:
    - Full access to all device camera features (HDR, filters, panorama, etc.)
    - Native camera controls and processing
@@ -124,10 +130,17 @@ Since this app uses camera hardware, it must be tested on physical devices. Key 
 
 1. **Mode Switching**: Verify toggling between Custom and Native modes works correctly
 2. **Custom Camera Mode**:
-   - Verify overlays appear on preview
-   - Confirm overlays don't appear in saved photos
-   - Test all three overlay options (none, circle, square)
-   - Verify slider changes overlay size
+   - **Overlays**:
+     - Verify overlays appear on preview
+     - Confirm overlays don't appear in saved photos
+     - Test all three overlay options (none, circle, square)
+     - Verify slider changes overlay size
+   - **Camera Controls**:
+     - Test zoom slider and verify zoom level changes
+     - Test tap-to-focus on different parts of the preview
+     - Test exposure adjustment slider
+     - Test flash mode cycling (off → auto → on → off)
+     - Verify all controls work simultaneously with overlays
 3. **Native Camera Mode**:
    - Verify native camera launches correctly
    - Confirm photos can be taken and returned to the app
