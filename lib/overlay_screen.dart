@@ -45,7 +45,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: Colors.black.withOpacity(0.02), // Almost transparent background so overlay is visible
       child: Stack(
         children: [
           // The draggable overlay shape
@@ -66,12 +66,13 @@ class _OverlayScreenState extends State<OverlayScreen> {
                 width: _overlaySize,
                 height: _overlaySize,
                 decoration: BoxDecoration(
+                  color: Colors.transparent, // Keep shape interior transparent
                   shape: _overlayShape == OverlayShape.circle
                       ? BoxShape.circle
                       : BoxShape.rectangle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.7),
-                    width: 3,
+                    color: Colors.white.withOpacity(0.9), // More opaque border for better visibility
+                    width: 4, // Slightly thicker for visibility
                   ),
                 ),
               ),
