@@ -59,8 +59,11 @@ class _CameraScreenState extends State<CameraScreen> {
 
       final image = await _controller!.takePicture();
       
-      // Copy the file to our desired location
-      await File(image.path).copy(imagePath);
+      // Move the file to our desired location
+      final tempFile = File(image.path);
+      await tempFile.copy(imagePath);
+      // Clean up the temporary file
+      await tempFile.delete();
 
       setState(() {
         _lastPhotoPath = imagePath;
@@ -75,7 +78,7 @@ class _CameraScreenState extends State<CameraScreen> {
         );
       }
     } catch (e) {
-      print('Error taking picture: $e');
+      debugPrint('Error taking picture: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error taking picture: $e')),

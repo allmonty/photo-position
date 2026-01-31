@@ -10,7 +10,7 @@ Future<void> main() async {
   try {
     cameras = await availableCameras();
   } catch (e) {
-    print('Error initializing cameras: $e');
+    debugPrint('Error initializing cameras: $e');
   }
   
   runApp(const PhotoPositionApp());
