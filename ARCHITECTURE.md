@@ -1,44 +1,69 @@
 # App Structure Visualization
 
-## UI Layout
+## UI Layout - Main App
 
 ```
 ┌─────────────────────────────────────────┐
-│         Photo Position App              │  ← AppBar
+│    Photo Position Overlay               │  ← AppBar
 ├─────────────────────────────────────────┤
 │                                         │
-│         [Camera Preview]                │
+│            ╭────────╮                   │
+│            │   □    │                   │
+│            ╰────────╯                   │
 │                                         │
-│            ╭───────╮                    │  ← Overlay (Circle)
-│            │       │                    │     OR
-│            │   O   │                    │  ┌─────────┐
-│            │       │                    │  │         │ (Square)
-│            ╰───────╯                    │  │    ▢    │
-│                                         │  │         │
-│                                         │  └─────────┘
+│      Position Overlay App               │
 │                                         │
-├─────────────────────────────────────────┤
-│  Controls Panel (Black background)      │
+│   Create a positioning overlay that     │
+│   stays on top of other apps            │
 │                                         │
-│  [No]   [Circle]   [Square]            │  ← Shape Buttons
 │                                         │
-│  [▁▁▁▁▁●▁▁▁▁▁▁▁]  Size: 200px          │  ← Size Slider
+│        ╭─────────────────╮              │
+│        │  ▶ Start Overlay │              │
+│        ╰─────────────────╯              │
 │                                         │
-│          ( Camera Button )              │  ← Capture Button
+│  ────────────────────────────           │
+│                                         │
+│  Instructions:                          │
+│  1. Tap "Start Overlay"                 │
+│  2. Drag circle/square to position      │
+│  3. Use controls to change shape/size   │
+│  4. Open camera app to use overlay      │
+│  5. Tap overlay to toggle controls      │
+│  6. Close from controls or this app     │
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
-## Component Stack Layers
+## Overlay Window View
 
 ```
-Layer 3: Controls (Buttons, Slider)  ← Always on top
+┌─────────────────────────────────────────┐
+│                                         │ ← Any app (e.g., Camera)
+│                                         │
+│            ╭─────────╮  ┌─────┐        │
+│            │         │  │  ×  │        │  ← Controls panel
+│            │    ○    │  │ ═══ │        │     (closable)
+│            │         │  │  ○  │        │
+│            ╰─────────╯  │  +  │        │
+│       (Draggable)       │ 200 │        │
+│                         │  −  │        │
+│                         │ ═══ │        │
+│                         │ 👁‍🗨 │        │
+│                         └─────┘        │
+│                                         │
+│  [Tap overlay to show controls]         │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+## Component Stack Layers (Overlay Mode)
+
+```
+Layer 2: Control Panel (X, shape, size)  ← Overlay controls
          ↑
-Layer 2: Overlay (Circle/Square)     ← UI only, NOT in photo
+Layer 1: Shape Overlay (Circle/Square)   ← Draggable
          ↑
-Layer 1: Camera Preview              ← Actual camera feed
-         ↑
-Layer 0: Background
+Layer 0: Other Apps (Camera, etc.)       ← Underneath
 ```
 
 ## Data Flow
@@ -46,23 +71,32 @@ Layer 0: Background
 ```
 App Start
     ↓
-Initialize Cameras
+Main App Launches
     ↓
-Create CameraController
+User Taps "Start Overlay"
     ↓
-Display Camera Preview
+Request Overlay Permission
+    ├─→ Denied → Show Error
     ↓
-User Selects Overlay Shape → Update UI State
+    Granted
     ↓
-User Adjusts Size → Update Overlay Size
+Create Overlay Window
     ↓
-User Taps Capture Button
+Overlay Appears Over All Apps
     ↓
-CameraController.takePicture()
+User Drags Overlay → Update Position
     ↓
-Save Image (WITHOUT overlay)
+User Toggles Shape → Update Shape (Circle ↔ Square)
     ↓
-Show Success Message
+User Adjusts Size → Update Size (+/- buttons)
+    ↓
+User Opens Camera App → Overlay Stays On Top
+    ↓
+User Positions Subject Within Overlay
+    ↓
+User Takes Photo (with camera app)
+    ↓
+User Closes Overlay → Overlay Removed
 ```
 
 ## File Organization
@@ -71,77 +105,96 @@ Show Success Message
 photo_position/
 │
 ├── lib/
-│   ├── main.dart              ← Entry point, camera init
-│   └── camera_screen.dart     ← UI, overlay, capture logic
+│   ├── main.dart              ← Entry point, main app UI
+│   └── overlay_screen.dart    ← Overlay window UI with controls
 │
 ├── android/                   ← Android platform config
 │   ├── app/
 │   │   ├── src/main/
-│   │   │   ├── AndroidManifest.xml  ← Permissions
+│   │   │   ├── AndroidManifest.xml  ← Overlay permissions
 │   │   │   └── kotlin/MainActivity.kt
 │   │   └── build.gradle
 │   └── build.gradle
 │
-├── ios/                       ← iOS platform config
-│   └── Runner/
-│       └── Info.plist         ← Permissions
-│
-├── pubspec.yaml               ← Dependencies
+├── pubspec.yaml               ← Dependencies (flutter_overlay_window)
 ├── analysis_options.yaml      ← Linter config
 │
 ├── README.md                  ← User documentation
 ├── TECHNICAL.md               ← Technical details
-└── QUICKSTART.md              ← Setup guide
+└── ARCHITECTURE.md            ← This file
 ```
 
 ## Key Implementation Details
 
-### Why Overlays Don't Appear in Photos
+### How Overlay Stays On Top
 
-The overlay is a Flutter `Container` widget positioned in a `Stack` on top of the `CameraPreview` widget. When `CameraController.takePicture()` is called:
+The app uses the `flutter_overlay_window` package which:
 
-1. It captures data directly from the camera hardware
-2. This data doesn't include Flutter's widget tree
-3. Therefore, the overlay (which is just a widget) is not captured
+1. Creates a system-level window with `SYSTEM_ALERT_WINDOW` permission
+2. Runs a separate Flutter instance for the overlay
+3. Displays above all other apps including camera
 
 ```dart
-Stack(
-  children: [
-    CameraPreview(_controller),    // ← Camera stream (captured)
-    _buildOverlay(),               // ← Flutter widget (NOT captured)
-    _buildControls(),              // ← Flutter widget (NOT captured)
-  ],
+FlutterOverlayWindow.showOverlay(
+  enableDrag: false,            // We handle dragging manually
+  width: WindowSize.matchParent, // Full screen transparent
+  height: WindowSize.matchParent,
+  ...
 )
+```
+
+### Two Flutter Instances
+
+The app runs in two modes:
+- **Main App**: Standard app for starting/stopping overlay
+- **Overlay Window**: Separate instance showing the overlay
+
+```dart
+if (await FlutterOverlayWindow.isActive()) {
+  // Running in overlay mode
+  runApp(MaterialApp(home: OverlayScreen()));
+} else {
+  // Running in main app mode
+  runApp(PhotoPositionApp());
+}
 ```
 
 ### State Management
 
-The app uses simple `setState()` for state management:
-- `_overlayShape`: Current shape (none/circle/square)
+**Main App:**
+- `_isOverlayActive`: Whether overlay is running
+
+**Overlay Window:**
+- `_overlayShape`: Circle or square
 - `_overlaySize`: Size in pixels (100-400)
-- `_controller`: CameraController instance
-- `_lastPhotoPath`: Path to last saved photo
+- `_overlayPosition`: X/Y coordinates
+- `_showControls`: Controls panel visibility
 
 ### Permissions Flow
 
 ```
 First App Launch
     ↓
-Request Camera Permission
+Request Overlay Permission
     ↓
-┌─────────────┐
-│ User Choice │
-└──────┬──────┘
-       │
-   ┌───┴────┐
-   │        │
-Allow    Deny
-   │        │
-   │    Camera Unavailable
-   │        │
-   │    Show Error
-   ↓
-Camera Active
-   ↓
+┌──────────────────┐
+│   User Choice    │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │         │
+  Allow     Deny
+    │         │
+    │    Permission Required
+    │         │
+    │    Show Error
+    ↓
+Overlay Can Be Created
+    ↓
+User Taps "Start Overlay"
+    ↓
+Overlay Window Appears
+    ↓
 App Functions Normally
 ```
+

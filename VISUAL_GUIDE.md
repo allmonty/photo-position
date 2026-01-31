@@ -2,99 +2,131 @@
 
 ## App Screenshots (Mockup)
 
-### Main Camera View with Circle Overlay
+### Main App - Home Screen
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
+│  Photo Position Overlay                     │
 ├─────────────────────────────────────────────┤
 │                                             │
 │                                             │
+│              ╭────────────╮                 │
+│              │     □      │                 │
+│              ╰────────────╯                 │
 │                                             │
-│               ┌─────────┐                   │
-│               │         │                   │
-│               │    ○    │  ← Circle Overlay │
-│               │         │     (white border)│
-│               └─────────┘                   │
+│          Position Overlay App               │
+│                                             │
+│     Create a positioning overlay that       │
+│     stays on top of other apps              │
 │                                             │
 │                                             │
+│        ┌─────────────────────┐              │
+│        │  ▶  Start Overlay   │              │
+│        └─────────────────────┘              │
 │                                             │
-├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│  ─────────────────────────────────          │
 │                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (white)   (BLUE ✓)   (white)              │
+│  Instructions:                              │
+│  1. Tap "Start Overlay" to create          │
+│  2. Drag the circle/square to position     │
+│  3. Use controls to change shape and size  │
+│  4. Open your camera app to use overlay    │
+│  5. Tap the overlay to toggle controls     │
+│  6. Close overlay from controls or app     │
 │                                             │
-│  ▁▁ ────────●─────── ▁▁  Size: 200         │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
 └─────────────────────────────────────────────┘
 ```
 
-### Main Camera View with Square Overlay
+### Main App - Overlay Active
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
+│  Photo Position Overlay                     │
 ├─────────────────────────────────────────────┤
 │                                             │
 │                                             │
+│              ╭────────────╮                 │
+│              │     □      │                 │
+│              ╰────────────╯                 │
 │                                             │
-│               ┌─────────┐                   │
-│               │         │                   │
-│               │    ▢    │  ← Square Overlay│
-│               │         │     (white border)│
-│               └─────────┘                   │
+│          Position Overlay App               │
+│                                             │
+│     Create a positioning overlay that       │
+│     stays on top of other apps              │
 │                                             │
 │                                             │
+│         Overlay is active! ✓                │
 │                                             │
-├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│        ┌─────────────────────┐              │
+│        │  ■  Stop Overlay    │              │
+│        └─────────────────────┘              │
 │                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (white)   (white)    (BLUE ✓)             │
-│                                             │
-│  ▁▁ ────────●─────── ▁▁  Size: 200         │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
 └─────────────────────────────────────────────┘
 ```
 
-### No Overlay View
+### Overlay Window - Circle Shape
 
 ```
 ┌─────────────────────────────────────────────┐
-│  ← Photo Position                           │
-├─────────────────────────────────────────────┤
+│                                             │ ← Camera app
+│                                             │   (or any app)
+│                                       ┌───┐ │
+│            ┌─────────┐                │ × │ │ ← Close
+│            │         │                ├───┤ │
+│            │    ○    │                │ ○ │ │ ← Shape (circle)
+│            │         │                ├───┤ │
+│            └─────────┘                │ + │ │ ← Increase size
+│          (Drag to move)               │200│ │ ← Size display
+│                                       │ − │ │ ← Decrease size
+│                                       ├───┤ │
+│                                       │👁‍🗨│ │ ← Hide controls
+│                                       └───┘ │
 │                                             │
+│  ┌────────────────────────────────────┐    │
+│  │ Tap overlay to show controls       │    │
+│  └────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+```
+
+### Overlay Window - Square Shape
+
+```
+┌─────────────────────────────────────────────┐
+│                                             │ ← Camera app
+│                                             │   (or any app)
+│                                       ┌───┐ │
+│            ┌─────────┐                │ × │ │ ← Close
+│            │         │                ├───┤ │
+│            │    □    │                │ □ │ │ ← Shape (square)
+│            │         │                ├───┤ │
+│            └─────────┘                │ + │ │ ← Increase size
+│          (Drag to move)               │300│ │ ← Size display
+│                                       │ − │ │ ← Decrease size
+│                                       ├───┤ │
+│                                       │👁‍🗨│ │ ← Hide controls
+│                                       └───┘ │
 │                                             │
+└─────────────────────────────────────────────┘
+```
+
+### Overlay Window - Controls Hidden
+
+```
+┌─────────────────────────────────────────────┐
+│                                             │ ← Camera app
+│                                             │   (or any app)
 │                                             │
-│          [CLEAN CAMERA VIEW]                │
+│            ┌─────────┐                      │
+│            │         │                      │
+│            │    ○    │                      │
+│            │         │                      │
+│            └─────────┘                      │
+│          (Drag to move)                     │
 │                                             │
-│            No overlay shown                 │
+│  ┌────────────────────────────────────┐    │
+│  │ Tap overlay to show controls       │    │ ← Hint
+│  └────────────────────────────────────┘    │
 │                                             │
-│                                             │
-│                                             │
-│                                             │
-│                                             │
-├─────────────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓▓▓ CONTROLS ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
-│                                             │
-│   [  ✕  ]    [  ○  ]    [  ▢  ]           │
-│    No       Circle     Square               │
-│   (BLUE ✓)  (white)    (white)              │
-│                                             │
-│         (Size slider hidden)                │
-│                                             │
-│              ╭─────────╮                    │
-│              │  📷     │  ← Capture Button  │
-│              ╰─────────╯                    │
 └─────────────────────────────────────────────┘
 ```
 
@@ -102,141 +134,165 @@
 
 ```
 ┌─────────────┐
-│ Open App    │
+│  Open App   │
 └──────┬──────┘
        │
        ▼
-┌──────────────────────────┐
-│ Request Camera Permission│
-└──────┬──────────────┬────┘
+┌───────────────────────────┐
+│ Request Overlay Permission│
+└──────┬──────────────┬─────┘
        │              │
     Allow          Deny
        │              │
        ▼              ▼
-┌─────────────┐  ┌──────────────┐
-│Camera Ready │  │ Error Message│
-└──────┬──────┘  └──────────────┘
+┌──────────────┐  ┌──────────────┐
+│ Tap "Start   │  │ Error Message│
+│  Overlay"    │  │ (Permission  │
+└──────┬───────┘  │  Required)   │
+       │          └──────────────┘
+       ▼
+┌──────────────────┐
+│ Overlay Appears  │
+│ with Controls    │
+└──────┬───────────┘
        │
        ▼
 ┌──────────────────┐
-│ Select Overlay   │◄───────┐
-│ • Circle         │        │
-│ • Square         │        │
-│ • None           │        │
+│ Drag Overlay to  │◄───────┐
+│ Desired Position │        │
+└──────┬───────────┘        │
+       │                    │
+       ▼                    │
+┌──────────────────┐        │
+│ Toggle Shape     │        │
+│ (Circle/Square)  │        │
 └──────┬───────────┘        │
        │                    │
        ▼                    │
 ┌──────────────────┐        │
 │ Adjust Size      │        │
-│ (slider)         │        │
+│ (+/- buttons)    │        │
+└──────┬───────────┘        │
+       │                    │
+       ▼                    │
+┌──────────────────┐        │
+│ Hide Controls    │        │
+│ (Optional)       │        │
+└──────┬───────────┘        │
+       │                    │
+       ▼                    │
+┌──────────────────┐        │
+│ Open Camera App  │        │
 └──────┬───────────┘        │
        │                    │
        ▼                    │
 ┌──────────────────┐        │
 │ Position Subject │        │
-│ within overlay   │        │
+│ within Overlay   │        │
 └──────┬───────────┘        │
        │                    │
        ▼                    │
 ┌──────────────────┐        │
-│ Tap Camera       │        │
-│ Button           │        │
+│ Take Photos      │        │
+│ (using camera)   │        │
 └──────┬───────────┘        │
        │                    │
        ▼                    │
 ┌──────────────────┐        │
-│ Photo Captured   │        │
-│ (NO overlay in   │        │
-│  saved image!)   │        │
-└──────┬───────────┘        │
-       │                    │
-       ▼                    │
-┌──────────────────┐        │
-│ Success Message  │        │
+│ Close Overlay    │        │
+│ (from controls   │        │
+│  or main app)    │        │
 └──────┬───────────┘        │
        │                    │
        └────────────────────┘
-    Take another photo
+    Reposition/Adjust again
 ```
 
 ## Color Scheme
 
-- **Background**: Black (camera controls area)
-- **Selected Button**: Blue (#2196F3)
-- **Unselected Button**: White
+- **Main App Background**: White
+- **Overlay Background**: Transparent
 - **Overlay Border**: White with 70% opacity
 - **Border Width**: 3 pixels
-- **AppBar**: Black87
+- **Control Panel Background**: Black with 70% opacity
+- **Control Icons**: White
+- **AppBar**: Blue (inversePrimary)
 
 ## Typography
 
-- **App Title**: Default Material AppBar style
-- **Button Labels**: 12px
-- **Size Label**: Default Material slider label
+- **App Title**: 28px, Bold
+- **Instructions**: 16px, Regular
+- **Buttons**: 18px
+- **Size Display**: 12px
 
 ## Interactions
 
-### Buttons
-- **Tap**: Switch overlay shape
-- **Visual Feedback**: Color changes from white to blue when selected
+### Main App Buttons
+- **Start Overlay**: Creates overlay window
+  - Visual: Blue button with play icon
+  - Feedback: Button changes to "Stop Overlay"
+- **Stop Overlay**: Removes overlay window
+  - Visual: Red button with stop icon
 
-### Slider
-- **Drag**: Adjust overlay size
-- **Range**: 100 to 400 pixels
-- **Divisions**: 30 steps
-- **Label**: Shows current size
+### Overlay Controls
+- **Close (×)**: Removes overlay
+- **Shape Toggle (○/□)**: Switches between circle and square
+- **Size + Button**: Increases size by 20px
+- **Size − Button**: Decreases size by 20px
+- **Hide Controls (👁‍🗨)**: Hides control panel
 
-### Camera Button
-- **Tap**: Capture photo
-- **Feedback**: SnackBar notification with save path
+### Drag Gesture
+- **Tap and Drag**: Move overlay anywhere on screen
+- **Tap**: Toggle control visibility
 
 ## Responsive Behavior
 
-- Overlay is always centered on screen
-- Controls panel maintains fixed height at bottom
-- Camera preview fills remaining space
-- Overlay size is absolute (not percentage-based) for consistency across devices
+- Overlay size is absolute (100-400 pixels)
+- Controls panel fixed to top-right corner
+- Overlay position is screen-relative
+- Transparent areas allow interaction with underlying apps
 
 ## Accessibility
 
 - Large touch targets for all buttons
-- Clear visual feedback for selections
-- Descriptive labels for all controls
-- High contrast colors (white on black)
+- Clear visual feedback
+- High contrast controls (white on black)
+- Simple, intuitive controls
+- Instruction text when controls hidden
 
 ## Performance
 
-- Smooth overlay rendering (no impact on camera performance)
+- Minimal CPU/GPU usage (simple shapes)
+- No impact on underlying apps
 - Instant shape switching
-- Real-time size adjustment
-- Fast photo capture
+- Smooth drag interactions
+- Lightweight overlay process
 
-## Technical Notes
-
-### Why No Gallery?
-To keep the implementation minimal and focused on the core feature (aligned photography), a gallery view was not included. Photos are saved to the app's documents directory and can be accessed through the device's file manager.
-
-### Why No Camera Switching?
-The initial implementation uses the default (back) camera to keep the code simple. Front camera switching can be easily added if needed.
-
-### Why These Shapes?
-Circle and square cover the majority of use cases:
-- **Circle**: Faces, flowers, products, round objects
-- **Square**: Documents, frames, rectangular objects, packaging
-
-## Example Use Case: Product Photography
+## Example Use Case: Aligned Product Photos
 
 ```
 Photo 1:        Photo 2:        Photo 3:
 ┌─────────┐     ┌─────────┐     ┌─────────┐
-│         │     │         │     │         │
 │  ┌───┐  │     │  ┌───┐  │     │  ┌───┐  │
 │  │ 🎁│  │     │  │ 📦│  │     │  │ 📱│  │
 │  └───┘  │     │  └───┘  │     │  └───┘  │
-│         │     │         │     │         │
 └─────────┘     └─────────┘     └─────────┘
 
 All products aligned in the exact same position!
+Perfect for e-commerce, documentation, or social media.
 ```
 
-Perfect for e-commerce, documentation, or any situation requiring consistent framing.
+## Example Use Case: Portrait Photography
+
+```
+Photo 1:        Photo 2:        Photo 3:
+┌─────────┐     ┌─────────┐     ┌─────────┐
+│  ┌─○─┐  │     │  ┌─○─┐  │     │  ┌─○─┐  │
+│  │😊│  │     │  │😃│  │     │  │😄│  │
+│  └───┘  │     │  └───┘  │     │  └───┘  │
+└─────────┘     └─────────┘     └─────────┘
+
+Consistent face positioning across multiple shots!
+Perfect for passport photos, ID cards, or headshots.
+```
+
