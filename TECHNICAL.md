@@ -60,7 +60,7 @@ Photo displayed and saved
      - **Zoom**: Vertical slider or pinch gesture (supports device's full zoom range)
      - **Tap to Focus**: Tap anywhere to set focus and exposure point
      - **Exposure**: Vertical slider for brightness adjustment
-     - **Flash**: Toggle button cycling through Off → Auto → Always On
+     - **Flash**: Toggle button cycling through Off → Auto → Always
 3. **Native Camera Features**:
    - Full access to all device camera features (HDR, filters, panorama, etc.)
    - Native camera controls and processing

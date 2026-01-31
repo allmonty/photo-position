@@ -14,7 +14,7 @@ A Flutter photography app that offers both custom camera with alignment overlays
 - **Zoom Control**: Pinch to zoom or use the vertical slider on the right side
 - **Tap to Focus**: Tap anywhere on the preview to focus and adjust exposure
 - **Exposure Adjustment**: Fine-tune brightness with the exposure slider
-- **Flash Modes**: Toggle between Off, Auto, and Always On
+- **Flash Modes**: Toggle between Off, Auto, and Always
 
 **Native Camera Mode**
 - **Full Native Features**: Opens the device's native camera app with all built-in features
@@ -33,7 +33,7 @@ A Flutter photography app that offers both custom camera with alignment overlays
    - **Zoom**: Use the vertical slider on the right (top) or pinch to zoom
    - **Exposure**: Use the vertical slider on the right (bottom) to adjust brightness
    - **Focus**: Tap anywhere on the preview to set focus point
-   - **Flash**: Tap the flash button (top left) to cycle through Off → Auto → On
+   - **Flash**: Tap the flash button (top left) to cycle through Off → Auto → Always
 4. **Use Overlay Guides:**
    - Select an overlay shape (Circle or Square) from the bottom controls
    - Adjust the overlay size using the slider to match your subject

@@ -76,7 +76,6 @@ class _CameraScreenState extends State<CameraScreen> {
       
       setState(() {});
     });
-    setState(() {});
   }
 
   @override
@@ -127,7 +126,7 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _onTapToFocus(TapUpDetails details, BoxConstraints constraints) async {
+  Future<void> _handleTapToFocusExposure(TapUpDetails details, BoxConstraints constraints) async {
     if (_controller == null || !_controller!.value.isInitialized) {
       return;
     }
@@ -302,7 +301,7 @@ class _CameraScreenState extends State<CameraScreen> {
                       children: [
                         // Camera Preview with tap to focus
                         GestureDetector(
-                          onTapUp: (details) => _onTapToFocus(details, constraints),
+                          onTapUp: (details) => _handleTapToFocusExposure(details, constraints),
                           child: SizedBox.expand(
                             child: CameraPreview(_controller!),
                           ),
