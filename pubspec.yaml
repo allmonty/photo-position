@@ -1,5 +1,5 @@
 name: photo_position
-description: A Flutter app for taking aligned photos with positioning overlays
+description: A Flutter app that creates a positioning overlay that stays on top of other apps
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,9 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  camera: ^0.10.5+5
-  path_provider: ^2.1.1
-  path: ^1.8.3
+  flutter_overlay_window: ^0.5.2
 
 dev_dependencies:
   flutter_test:

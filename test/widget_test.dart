@@ -11,20 +11,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('App shows start overlay button', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const PhotoPositionApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify that the start overlay button is present
+    expect(find.text('Start Overlay'), findsOneWidget);
+    expect(find.text('Position Overlay App'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('App shows instructions', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PhotoPositionApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that instructions are present
+    expect(find.text('Instructions:'), findsOneWidget);
+    expect(find.textContaining('Drag the circle/square'), findsOneWidget);
   });
 }
