@@ -45,21 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _checkOverlayStatus();
-  }
-
-  Future<void> _checkOverlayStatus() async {
-    final isActive = await FlutterOverlayWindow.isActive();
-    setState(() {
-      _isOverlayActive = isActive;
-    });
   }
 
   Future<void> _requestPermission() async {
     final status = await FlutterOverlayWindow.isPermissionGranted();
     if (!status) {
       final granted = await FlutterOverlayWindow.requestPermission();
-      if (granted! && mounted) {
+      if (!granted && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Overlay permission is required to use this app'),
@@ -77,23 +69,54 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    await FlutterOverlayWindow.showOverlay(
-      enableDrag: false,
-      overlayTitle: "Photo Position Overlay",
-      overlayContent: 'Positioning overlay active',
-      flag: OverlayFlag.defaultFlag,
-      visibility: NotificationVisibility.visibilityPublic,
-      positionGravity: PositionGravity.none,
-      width: WindowSize.matchParent,
-      height: WindowSize.matchParent,
-    );
+    try {
+      await FlutterOverlayWindow.showOverlay(
+        enableDrag: false,
+        overlayTitle: "Photo Position Overlay",
+        overlayContent: 'Positioning overlay active',
+        flag: OverlayFlag.defaultFlag,
+        visibility: NotificationVisibility.visibilityPublic,
+        positionGravity: PositionGravity.none,
+        width: WindowSize.matchParent,
+        height: WindowSize.matchParent,
+      );
 
-    await _checkOverlayStatus();
+      // Update state after a short delay to allow overlay to initialize
+      if (mounted) {
+        setState(() {
+          _isOverlayActive = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to show overlay: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _closeOverlay() async {
-    await FlutterOverlayWindow.closeOverlay();
-    await _checkOverlayStatus();
+    try {
+      await FlutterOverlayWindow.closeOverlay();
+      if (mounted) {
+        setState(() {
+          _isOverlayActive = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to close overlay: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
