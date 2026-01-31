@@ -4,27 +4,21 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│         Photo Position App              │  ← AppBar
+│         Photo Position                  │  ← AppBar
 ├─────────────────────────────────────────┤
 │                                         │
-│         [Camera Preview]                │
 │                                         │
-│            ╭───────╮                    │  ← Overlay (Circle)
-│            │       │                    │     OR
-│            │   O   │                    │  ┌─────────┐
-│            │       │                    │  │         │ (Square)
-│            ╰───────╯                    │  │    ▢    │
-│                                         │  │         │
-│                                         │  └─────────┘
+│         [Last Photo Preview]            │  ← Shows captured photo
+│              or                         │     OR
+│         [Camera Icon]                   │  ← No photo yet state
+│      "No photos taken yet"              │
+│                                         │
+│                                         │
+│                                         │
 │                                         │
 ├─────────────────────────────────────────┤
-│  Controls Panel (Black background)      │
 │                                         │
-│  [No]   [Circle]   [Square]            │  ← Shape Buttons
-│                                         │
-│  [▁▁▁▁▁●▁▁▁▁▁▁▁]  Size: 200px          │  ← Size Slider
-│                                         │
-│          ( Camera Button )              │  ← Capture Button
+│      [ 📷 Open Camera Button ]          │  ← Opens native camera
 │                                         │
 └─────────────────────────────────────────┘
 ```
@@ -32,13 +26,9 @@
 ## Component Stack Layers
 
 ```
-Layer 3: Controls (Buttons, Slider)  ← Always on top
+Layer 1: FloatingActionButton (Open Camera)  ← Always on top
          ↑
-Layer 2: Overlay (Circle/Square)     ← UI only, NOT in photo
-         ↑
-Layer 1: Camera Preview              ← Actual camera feed
-         ↑
-Layer 0: Background
+Layer 0: Content (Photo Preview or Empty State)
 ```
 
 ## Data Flow
@@ -46,21 +36,19 @@ Layer 0: Background
 ```
 App Start
     ↓
-Initialize Cameras
+Display Main Screen
     ↓
-Create CameraController
+User Taps "Open Camera" Button
     ↓
-Display Camera Preview
+Launch Native Camera App
     ↓
-User Selects Overlay Shape → Update UI State
+User Takes Photo (using native camera features)
     ↓
-User Adjusts Size → Update Overlay Size
+Native Camera Returns Photo
     ↓
-User Taps Capture Button
+Save Photo to App Directory
     ↓
-CameraController.takePicture()
-    ↓
-Save Image (WITHOUT overlay)
+Display Photo Preview
     ↓
 Show Success Message
 ```
@@ -96,31 +84,38 @@ photo_position/
 
 ## Key Implementation Details
 
-### Why Overlays Don't Appear in Photos
+### How Native Camera Integration Works
 
-The overlay is a Flutter `Container` widget positioned in a `Stack` on top of the `CameraPreview` widget. When `CameraController.takePicture()` is called:
+The app uses the `image_picker` package to launch the device's native camera application:
 
-1. It captures data directly from the camera hardware
-2. This data doesn't include Flutter's widget tree
-3. Therefore, the overlay (which is just a widget) is not captured
+1. User taps the "Open Camera" button
+2. App calls `ImagePicker.pickImage(source: ImageSource.camera)`
+3. Flutter launches the native camera intent on Android
+4. User uses all native camera features (HDR, filters, panorama, etc.)
+5. Photo is captured using native camera controls
+6. Native camera returns the photo to Flutter
+7. Flutter saves and displays the photo
 
 ```dart
-Stack(
-  children: [
-    CameraPreview(_controller),    // ← Camera stream (captured)
-    _buildOverlay(),               // ← Flutter widget (NOT captured)
-    _buildControls(),              // ← Flutter widget (NOT captured)
-  ],
-)
+final ImagePicker _picker = ImagePicker();
+
+Future<void> _takePicture() async {
+  final XFile? photo = await _picker.pickImage(
+    source: ImageSource.camera,
+    preferredCameraDevice: CameraDevice.rear,
+  );
+  
+  if (photo != null) {
+    // Save and display the photo
+  }
+}
 ```
 
 ### State Management
 
 The app uses simple `setState()` for state management:
-- `_overlayShape`: Current shape (none/circle/square)
-- `_overlaySize`: Size in pixels (100-400)
-- `_controller`: CameraController instance
-- `_lastPhotoPath`: Path to last saved photo
+- `_imageFile`: The last captured photo file
+- `_lastPhotoPath`: Path to the last saved photo
 
 ### Permissions Flow
 

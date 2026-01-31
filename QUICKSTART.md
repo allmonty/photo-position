@@ -37,32 +37,34 @@
 
 ### Taking Your First Photo
 
-1. **Launch the app** - The camera view will open automatically
+1. **Launch the app** - You'll see the main screen with an "Open Camera" button
 2. **Grant camera permission** - Allow camera access when prompted
-3. **Select an overlay**:
-   - Tap the circle icon for a circular overlay
-   - Tap the square icon for a rectangular overlay
-   - Tap the X icon to hide the overlay
-4. **Adjust size** - Use the slider to resize the overlay
-5. **Position your subject** - Align your subject within the overlay
-6. **Capture** - Tap the large camera button at the bottom
-7. **Success!** - You'll see a confirmation message with the save location
+3. **Tap "Open Camera"** - The native camera app will launch
+4. **Use native features** - Access all your device's camera features:
+   - HDR mode
+   - Filters and effects
+   - Panorama mode
+   - Burst mode
+   - Flash settings
+   - And all other device-specific features
+5. **Capture** - Take the photo using the native camera's shutter button
+6. **Success!** - The photo will be displayed in the app with a confirmation message
 
 ### Tips for Best Results
 
-- **Start with a circle** - Good for aligning faces, flowers, or round objects
-- **Use a square** - Better for documents, frames, or architectural elements
-- **Adjust the size** - Make the overlay match your subject's size
-- **Take multiple shots** - Use the same overlay position for consistent alignment
+- **Explore native features** - Take advantage of HDR, night mode, and other advanced features
+- **Use device filters** - Apply filters directly in the native camera for better results
+- **Adjust settings** - Use your device's camera settings for optimal quality
 - **Check lighting** - Ensure good lighting for better photo quality
+- **Preview in app** - View your captured photo in the app after taking it
 
 ### Common Use Cases
 
-1. **Product Photography**: Keep products in the same position across multiple shots
-2. **Stop Motion**: Align objects frame-by-frame for animation
-3. **Before/After**: Take comparison photos with identical framing
-4. **Portraits**: Keep face positioning consistent across a series
-5. **Time-Lapse**: Maintain consistent framing for time-lapse sequences
+1. **Professional Photos**: Use HDR and other advanced features for high-quality shots
+2. **Quick Capture**: Access the native camera quickly with one tap
+3. **Filtered Photos**: Apply native filters directly during capture
+4. **Panoramas**: Use panorama mode for wide-angle shots
+5. **Low-Light**: Use night mode or flash for low-light photography
 
 ## Troubleshooting
 
@@ -99,5 +101,5 @@ Then archive and export from Xcode.
 
 For issues or questions:
 - Check the TECHNICAL.md file for implementation details
-- Review Flutter camera plugin documentation: https://pub.dev/packages/camera
+- Review Flutter image_picker plugin documentation: https://pub.dev/packages/image_picker
 - Submit issues on GitHub: https://github.com/allmonty/photo-position/issues

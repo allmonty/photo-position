@@ -1,27 +1,71 @@
 # Photo Position
 
-A Flutter photography app that helps users take multiple photos with aligned elements.
+A Flutter photography app that offers both custom camera with alignment overlays and native camera with full device features.
 
 ## Features
 
-- **Camera Integration**: Full camera support for taking photos
+### Dual Camera Modes
+
+**Custom Camera Mode** (Default) - Now with Advanced Controls!
 - **Alignment Overlays**: Position circle or square overlays on the camera preview to help align objects
 - **Invisible Overlays**: Overlays appear only on the preview, not in the captured photos
 - **Adjustable Size**: Resize the overlay using a slider to match your subject
 - **Multiple Shapes**: Choose between circle, square, or no overlay
+- **Zoom Control**: Pinch to zoom or use the vertical slider on the right side
+- **Tap to Focus**: Tap anywhere on the preview to focus and adjust exposure
+- **Exposure Adjustment**: Fine-tune brightness with the exposure slider
+- **Flash Modes**: Toggle between Off, Auto, and Always
+
+**Native Camera Mode**
+- **Full Native Features**: Opens the device's native camera app with all built-in features
+- **Alternative Option**: Available when you prefer the native camera interface
+
+### Easy Mode Switching
+- Toggle between camera modes using the menu button in the app bar
+- Switch modes based on your needs: overlays for alignment or native camera for advanced features
 
 ## How to Use
 
-1. Launch the app to open the camera view
-2. Select an overlay shape (Circle or Square) from the bottom controls
-3. Adjust the overlay size using the slider to match your subject
-4. Position your subject within the overlay
+### Custom Camera Mode (with Overlays and Advanced Controls)
+1. Launch the app (custom camera mode is default)
+2. Grant camera permission when prompted
+3. **Use Advanced Controls:**
+   - **Zoom**: Use the vertical slider on the right (top) or pinch to zoom
+   - **Exposure**: Use the vertical slider on the right (bottom) to adjust brightness
+   - **Focus**: Tap anywhere on the preview to set focus point
+   - **Flash**: Tap the flash button (top left) to cycle through Off → Auto → Always
+4. **Use Overlay Guides:**
+   - Select an overlay shape (Circle or Square) from the bottom controls
+   - Adjust the overlay size using the slider to match your subject
+   - Position your subject within the overlay
 5. Tap the camera button to capture the photo
 6. The overlay will NOT appear in the saved photo
 
+### Native Camera Mode (all features)
+1. Tap the camera icon menu in the app bar
+2. Select "Native Camera (all features)"
+3. Tap "Open Native Camera" button
+4. Use all native camera features (HDR, filters, panorama, etc.)
+5. Take photo using native camera controls
+6. Photo is saved and displayed in the app
+
+### Switching Modes
+- Tap the camera/menu icon in the top right corner
+- Select your preferred camera mode
+- The app remembers your choice during the session
+
 ## Technical Details
 
-The app uses Flutter's camera plugin to capture photos. The overlay is rendered as a Flutter widget on top of the camera preview but is not part of the camera stream, ensuring it doesn't appear in the final image.
+The app uses a hybrid approach:
+- **Custom Camera Mode**: Uses Flutter's `camera` plugin with overlay widgets and advanced controls:
+  - Zoom control (slider and pinch gestures)
+  - Tap-to-focus functionality
+  - Exposure adjustment
+  - Flash mode toggle (Off/Auto/On)
+  - Overlays rendered on top of the camera preview
+- **Native Camera Mode**: Uses Flutter's `image_picker` plugin to launch the native Android camera application
+
+The custom camera mode now provides professional-grade controls while maintaining the overlay positioning feature.
 
 ## Setup
 
