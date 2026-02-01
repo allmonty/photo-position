@@ -81,9 +81,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       await FlutterOverlayWindow.showOverlay(
-        flag: OverlayFlag.focusPointer,
+        flag: OverlayFlag.defaultFlag,
         overlayTitle: "Photo Position Overlay",
         overlayContent: "Use this overlay to position your camera",
+        enableDrag: true,
         width: WindowSize.fullCover,
         height: WindowSize.fullCover,
       );

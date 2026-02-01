@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -16,10 +17,12 @@ class OverlayScreen extends StatefulWidget {
 class _OverlayScreenState extends State<OverlayScreen> {
   OverlayShape _overlayShape = OverlayShape.circle;
   double _overlaySize = 200.0;
-  Offset _overlayPosition = const Offset(100, 300);
+  // Offset _overlayPosition = const Offset(0, 0);
   bool _showControls = true;
 
   String? _portName;
+
+  double _overlayWindowHeight = 300.0;
 
   final double _panelHeight = 300.0;
   final double _panelWidth = 50.0;
@@ -63,34 +66,42 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    setState(() {
+      _overlayWindowHeight = max(_panelHeight, _overlaySize);
+    });
+    FlutterOverlayWindow.resizeOverlay(
+      (_overlaySize + _panelWidth).toInt(),
+      _overlayWindowHeight.toInt(),
+      true,
+    );
     return Material(
-      color: Colors.black.withOpacity(
-          0.15), // More visible background so users can see the overlay
+      color: Colors.transparent,
       child: Stack(
         children: [
           // Full screen tap area to make it obvious overlay is active
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _toggleControls,
-              child: Container(
-                color: Colors.transparent,
-              ),
-            ),
-          ),
+          // Positioned.fill(
+          //   child: GestureDetector(
+          //     onTap: _toggleControls,
+          //     child: Container(
+          //       color: Colors.transparent,
+          //     ),
+          //   ),
+          // ),
 
           // The draggable overlay shape
           Positioned(
-            left: _overlayPosition.dx,
-            top: _overlayPosition.dy,
+            left: 0,
+            top: (_overlayWindowHeight - _overlaySize) / 2,
             child: GestureDetector(
               onPanUpdate: (details) {
-                setState(() {
-                  _overlayPosition = Offset(
-                    _overlayPosition.dx + details.delta.dx,
-                    _overlayPosition.dy + details.delta.dy,
-                  );
-                });
+                // setState(() {
+                //   _overlayPosition = Offset(
+                //     _overlayPosition.dx + details.delta.dx,
+                //     _overlayPosition.dy + details.delta.dy,
+                //   );
+                // });
               },
+              onTap: _toggleControls,
               child: Container(
                 width: _overlaySize,
                 height: _overlaySize,
@@ -99,8 +110,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
                       ? BoxShape.circle
                       : BoxShape.rectangle,
                   border: Border.all(
-                    color:
-                        Colors.red, // Bright red border for maximum visibility
+                    color: const Color.fromARGB(155, 244, 67,
+                        54), // Bright red border for maximum visibility
                     width: 5, // Thicker border
                   ),
                 ),
@@ -111,8 +122,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
           // Controls panel
           if (_showControls)
             Positioned(
-              top: _overlayPosition.dy - (_panelHeight - _overlaySize) / 2,
-              right: 10,
+              top: (_overlayWindowHeight - _panelHeight) / 2,
+              right: 0,
               child: Container(
                 width: _panelWidth,
                 height: _panelHeight,
@@ -154,7 +165,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                       icon: const Icon(Icons.add, color: Colors.white),
                       onPressed: () {
                         setState(() {
-                          _overlaySize = (_overlaySize + 20).clamp(100, 400);
+                          _overlaySize = (_overlaySize + 20).clamp(50, 500);
                         });
                       },
                       tooltip: 'Increase size',
@@ -167,7 +178,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                       icon: const Icon(Icons.remove, color: Colors.white),
                       onPressed: () {
                         setState(() {
-                          _overlaySize = (_overlaySize - 20).clamp(100, 400);
+                          _overlaySize = (_overlaySize - 20).clamp(50, 500);
                         });
                       },
                       tooltip: 'Decrease size',
@@ -186,26 +197,26 @@ class _OverlayScreenState extends State<OverlayScreen> {
             ),
 
           // Instruction text when controls are hidden
-          if (!_showControls)
-            Positioned(
-              top: 50,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Tap overlay to show controls',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ),
-            ),
+          // if (!_showControls)
+          //   Positioned(
+          //     top: 50,
+          //     left: 0,
+          //     right: 0,
+          //     child: Center(
+          //       child: Container(
+          //         padding:
+          //             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          //         decoration: BoxDecoration(
+          //           color: Colors.black.withOpacity(0.7),
+          //           borderRadius: BorderRadius.circular(8),
+          //         ),
+          //         child: const Text(
+          //           'Tap overlay to show controls',
+          //           style: TextStyle(color: Colors.white, fontSize: 12),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
         ],
       ),
     );
