@@ -2,77 +2,124 @@
 
 ## Architecture Overview
 
-This Flutter app provides camera functionality with positioning overlays to help users take aligned photos.
+This Flutter app creates a system-level overlay window that displays positioning shapes (circle or square) that stay on top of all other apps, including the camera.
 
 ### Key Components
 
 #### 1. Main App (`lib/main.dart`)
-- Initializes available cameras on app startup
-- Sets up the MaterialApp with the CameraScreen as home
+- Checks if running in overlay mode or main app mode
+- **HomeScreen**: Main UI for starting/stopping the overlay
+- Requests overlay permission
+- Controls overlay lifecycle
 
-#### 2. Camera Screen (`lib/camera_screen.dart`)
-- **CameraController**: Manages camera functionality
-- **Overlay System**: Renders shapes (circle/square) on top of camera preview
-- **UI Controls**: Buttons for shape selection and size adjustment
+#### 2. Overlay Screen (`lib/overlay_screen.dart`)
+- **OverlayScreen**: The UI shown in the overlay window
+- **Draggable Overlay**: Movable circle/square shape
+- **Control Panel**: Buttons for shape, size, close, hide controls
+- Transparent background to show underlying apps
 
-### How Overlays Don't Appear in Photos
+### How Overlay Stays On Top
 
-The overlay system uses Flutter's widget layering with a `Stack`:
+The app uses `flutter_overlay_window` package which creates a system-level overlay:
 
 ```
-Stack
-├── CameraPreview (layer 0 - actual camera feed)
-├── Overlay Widget (layer 1 - UI only, not in camera stream)
-└── Controls (layer 2 - UI buttons and sliders)
+Main App (Standard Flutter)
+    ↓
+User Starts Overlay
+    ↓
+Package Creates Separate Window
+    ↓
+New Flutter Instance (Overlay Mode)
+    ↓
+Overlay Window (Above All Apps)
 ```
 
-When `takePicture()` is called on the `CameraController`, it captures only the camera stream data (layer 0), which does not include the Flutter widgets rendered on top. This ensures the overlay appears for alignment but not in the saved photo.
+When `FlutterOverlayWindow.showOverlay()` is called:
+1. Android creates a new window with `TYPE_APPLICATION_OVERLAY`
+2. This window runs a separate Flutter engine
+3. The window appears above all other apps
+4. User can interact with both overlay and underlying apps
+
+### Two-Instance Architecture
+
+The app runs as TWO separate Flutter instances:
+
+**Instance 1 - Main App:**
+```dart
+PhotoPositionApp
+  └─ HomeScreen
+      ├─ Start Overlay button
+      ├─ Stop Overlay button
+      └─ Instructions
+```
+
+**Instance 2 - Overlay Window:**
+```dart
+OverlayScreen (transparent background)
+  ├─ Draggable shape (circle/square)
+  └─ Control panel (right side)
+      ├─ Close button
+      ├─ Shape toggle
+      ├─ Size +/- buttons
+      └─ Hide controls button
+```
+
+The entry point differentiates:
+```dart
+if (await FlutterOverlayWindow.isActive()) {
+  // Overlay mode - show OverlayScreen
+  runApp(MaterialApp(home: OverlayScreen()));
+} else {
+  // Main app mode - show HomeScreen
+  runApp(PhotoPositionApp());
+}
+```
 
 ### Features
 
-1. **Shape Selection**: Toggle between no overlay, circle, or square
-2. **Size Adjustment**: Slider to resize overlay from 100 to 400 pixels
-3. **Visual Feedback**: Selected shape is highlighted in blue
-4. **Photo Capture**: Standard camera capture that saves to device storage
+1. **Shape Toggle**: Switch between circle and square
+2. **Size Adjustment**: +/- buttons to resize (100-400 pixels)
+3. **Drag to Position**: Drag overlay anywhere on screen
+4. **Control Visibility**: Hide controls by tapping overlay
+5. **Close Overlay**: Remove overlay from control panel or main app
 
 ### File Structure
 
 ```
 lib/
-  main.dart           - App entry point and camera initialization
-  camera_screen.dart  - Main camera UI with overlay functionality
+  main.dart              - Entry point and main app UI
+  overlay_screen.dart    - Overlay window with draggable shapes
 
 android/
   app/
     src/main/
-      AndroidManifest.xml  - Camera permissions for Android
-      kotlin/              - MainActivity implementation
-    build.gradle           - Android build configuration
+      AndroidManifest.xml    - Overlay permissions and service
+      kotlin/                - MainActivity implementation
+    build.gradle             - Android build configuration
 
-ios/
-  Runner/
-    Info.plist           - Camera permissions for iOS
-
-pubspec.yaml           - Dependencies (camera, path_provider, path)
+pubspec.yaml               - Dependencies (flutter_overlay_window)
 ```
 
 ### Dependencies
 
-- **camera**: ^0.10.5+5 - Camera plugin for Flutter
-- **path_provider**: ^2.1.1 - Get device directories for saving photos
-- **path**: ^1.8.3 - Path manipulation utilities
+- **flutter_overlay_window**: ^0.5.2 - System overlay package
 
 ### Permissions
 
 #### Android (AndroidManifest.xml)
-- `android.permission.CAMERA` - Required to access camera
-- `android.permission.WRITE_EXTERNAL_STORAGE` - Save photos
-- `android.permission.READ_EXTERNAL_STORAGE` - Access saved photos
 
-#### iOS (Info.plist)
-- `NSCameraUsageDescription` - Camera access explanation
-- `NSMicrophoneUsageDescription` - For potential video recording
-- `NSPhotoLibraryUsageDescription` - Photo library access
+Required permissions:
+- `android.permission.SYSTEM_ALERT_WINDOW` - Draw over other apps
+- `android.permission.FOREGROUND_SERVICE` - Run overlay service
+
+Required service:
+```xml
+<service
+    android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+    android:exported="false"
+    android:foregroundServiceType="specialUse">
+</service>
+```
 
 ### Running the App
 
@@ -81,41 +128,59 @@ pubspec.yaml           - Dependencies (camera, path_provider, path)
    flutter pub get
    ```
 
-2. Run on a physical device (camera won't work in emulators):
+2. Run on Android device:
    ```bash
    flutter run
    ```
 
-3. Or build for release:
+3. Grant overlay permission when prompted
+
+4. Tap "Start Overlay" in the app
+
+5. Open camera app - overlay will stay on top
+
+6. Or build for release:
    ```bash
-   flutter build apk        # Android
-   flutter build ios        # iOS
+   flutter build apk
    ```
 
 ### Testing
 
-Since this app requires camera hardware, it must be tested on physical devices. Key test scenarios:
+Key test scenarios:
 
-1. **Overlay Visibility**: Verify overlays appear on preview
-2. **Photo Capture**: Confirm overlays don't appear in saved photos
-3. **Shape Switching**: Test all three overlay options (none, circle, square)
-4. **Size Adjustment**: Verify slider changes overlay size
-5. **Permissions**: Test camera permission requests on first launch
+1. **Permission Request**: Verify overlay permission prompt appears
+2. **Overlay Creation**: Confirm overlay appears and is transparent
+3. **Drag Functionality**: Test dragging overlay to different positions
+4. **Shape Toggle**: Switch between circle and square
+5. **Size Adjustment**: Test +/- buttons change size
+6. **Stay On Top**: Verify overlay stays above camera and other apps
+7. **Control Toggle**: Hide/show controls by tapping overlay
+8. **Close Overlay**: Test closing from both control panel and main app
+
+### Platform Support
+
+**Android**: Full support (API 23+)
+- Requires "Draw over other apps" permission
+- Works on Android 6.0 (Marshmallow) and above
+
+**iOS**: Not currently supported
+- flutter_overlay_window is Android-only
+- iOS has restrictions on system overlays
 
 ### Known Limitations
 
-- Requires physical device with camera (won't work in emulators)
-- Photos are saved to app's documents directory (not photo gallery by default)
-- Front/back camera switching not implemented (uses default camera)
-- Flash controls not implemented
+- Android only (iOS doesn't support system overlays)
+- Requires manual permission grant on Android 6.0+
+- Overlay persists until manually closed
+- Limited to circle and square shapes
 
 ### Future Enhancements
 
 Potential improvements:
-- Gallery integration to view saved photos
-- Camera switching (front/back)
-- Flash/torch controls
-- Grid overlay option (rule of thirds)
-- Save directly to photo gallery
-- Multiple overlay colors
-- Opacity adjustment for overlays
+- More shape options (triangle, grid, etc.)
+- Color customization for overlay border
+- Opacity adjustment
+- Save/load preset positions and sizes
+- Multiple overlays simultaneously
+- Snap-to-grid positioning
+

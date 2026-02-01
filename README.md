@@ -1,27 +1,34 @@
 # Photo Position
 
-A Flutter photography app that helps users take multiple photos with aligned elements.
+A Flutter overlay app that creates a positioning overlay (circle or square) that stays on top of other apps.
 
 ## Features
 
-- **Camera Integration**: Full camera support for taking photos
-- **Alignment Overlays**: Position circle or square overlays on the camera preview to help align objects
-- **Invisible Overlays**: Overlays appear only on the preview, not in the captured photos
-- **Adjustable Size**: Resize the overlay using a slider to match your subject
-- **Multiple Shapes**: Choose between circle, square, or no overlay
+- **System Overlay**: Creates a transparent overlay that stays on top of all apps
+- **Shape Options**: Toggle between circle and square shapes
+- **Adjustable Size**: Increase or decrease the overlay size
+- **Draggable**: Move the overlay anywhere on the screen
+- **Camera Compatible**: Works perfectly over the camera app for photo alignment
+- **Toggle Controls**: Show/hide controls by tapping the overlay
 
 ## How to Use
 
-1. Launch the app to open the camera view
-2. Select an overlay shape (Circle or Square) from the bottom controls
-3. Adjust the overlay size using the slider to match your subject
-4. Position your subject within the overlay
-5. Tap the camera button to capture the photo
-6. The overlay will NOT appear in the saved photo
+1. Launch the app
+2. Tap "Start Overlay" to create the overlay (you'll be asked to grant overlay permission)
+3. The overlay will appear on your screen with controls on the right
+4. Drag the circle/square to position it anywhere
+5. Use the control panel to:
+   - Toggle between circle and square shapes
+   - Adjust size with +/- buttons
+   - Hide controls (tap overlay to show again)
+   - Close the overlay
+6. Open your camera app - the overlay will stay on top
+7. Position your subject within the overlay for perfect alignment
+8. Return to the app or use the overlay controls to stop the overlay
 
 ## Technical Details
 
-The app uses Flutter's camera plugin to capture photos. The overlay is rendered as a Flutter widget on top of the camera preview but is not part of the camera stream, ensuring it doesn't appear in the final image.
+The app uses the `flutter_overlay_window` package to create a system-level overlay that can stay on top of other applications. The overlay is fully interactive and can be positioned anywhere on the screen.
 
 ## Setup
 
@@ -32,4 +39,9 @@ The app uses Flutter's camera plugin to capture photos. The overlay is rendered 
 
 ## Permissions
 
-The app requires camera permissions to function properly. On first launch, you'll be prompted to grant camera access.
+The app requires "Draw over other apps" permission (SYSTEM_ALERT_WINDOW) to function properly. On first use, you'll be prompted to grant this permission.
+
+## Platform Support
+
+Currently supports Android devices. The overlay permission must be granted manually on Android 6.0 (Marshmallow) and above.
+

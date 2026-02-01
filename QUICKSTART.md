@@ -3,8 +3,8 @@
 ## Prerequisites
 
 - Flutter SDK installed (https://flutter.dev/docs/get-started/install)
-- A physical Android or iOS device (emulators don't support camera)
-- USB debugging enabled (Android) or developer mode (iOS)
+- An Android device (Android 6.0 or higher)
+- USB debugging enabled (Android)
 
 ## Installation Steps
 
@@ -21,7 +21,6 @@
 
 3. **Connect your device**
    - For Android: Enable USB debugging and connect via USB
-   - For iOS: Connect via USB and trust the computer
 
 4. **Verify device connection**
    ```bash
@@ -35,41 +34,68 @@
 
 ## Using the App
 
-### Taking Your First Photo
+### Creating Your First Overlay
 
-1. **Launch the app** - The camera view will open automatically
-2. **Grant camera permission** - Allow camera access when prompted
-3. **Select an overlay**:
-   - Tap the circle icon for a circular overlay
-   - Tap the square icon for a rectangular overlay
-   - Tap the X icon to hide the overlay
-4. **Adjust size** - Use the slider to resize the overlay
-5. **Position your subject** - Align your subject within the overlay
-6. **Capture** - Tap the large camera button at the bottom
-7. **Success!** - You'll see a confirmation message with the save location
+1. **Launch the app** - The home screen will open
+2. **Tap "Start Overlay"** - You'll be prompted to grant overlay permission
+3. **Grant permission** - Enable "Draw over other apps" in system settings
+4. **Overlay appears** - A transparent overlay with a circle will appear
+5. **See the controls** - Control panel is on the right side
+
+### Using the Overlay
+
+1. **Drag to position**:
+   - Tap and drag the circle/square to move it anywhere on screen
+
+2. **Toggle shape**:
+   - Tap the shape icon (○/□) in the control panel to switch
+
+3. **Adjust size**:
+   - Tap the + button to increase size
+   - Tap the − button to decrease size
+   - Size range: 100-400 pixels
+
+4. **Hide controls**:
+   - Tap the eye icon to hide the control panel
+   - Tap the overlay shape to show controls again
+
+5. **Use with camera**:
+   - Open your device's camera app
+   - The overlay will stay on top
+   - Position your subject within the overlay
+   - Take photos with the camera app
+
+6. **Close overlay**:
+   - Tap the × button in the control panel
+   - Or return to the Photo Position app and tap "Stop Overlay"
 
 ### Tips for Best Results
 
 - **Start with a circle** - Good for aligning faces, flowers, or round objects
 - **Use a square** - Better for documents, frames, or architectural elements
 - **Adjust the size** - Make the overlay match your subject's size
+- **Hide controls** - For unobstructed view when taking photos
 - **Take multiple shots** - Use the same overlay position for consistent alignment
-- **Check lighting** - Ensure good lighting for better photo quality
 
 ### Common Use Cases
 
 1. **Product Photography**: Keep products in the same position across multiple shots
-2. **Stop Motion**: Align objects frame-by-frame for animation
+2. **Selfie Alignment**: Maintain consistent face positioning
 3. **Before/After**: Take comparison photos with identical framing
-4. **Portraits**: Keep face positioning consistent across a series
-5. **Time-Lapse**: Maintain consistent framing for time-lapse sequences
+4. **ID Photos**: Align face in same position for passport/ID photos
+5. **Real Estate**: Consistent framing for property photos
 
 ## Troubleshooting
 
-### Camera not working
-- Ensure you're using a physical device (not an emulator)
-- Check that camera permissions are granted
+### Overlay permission denied
+- Go to Settings → Apps → Photo Position → Draw over other apps
+- Enable the permission manually
+- Return to the app and tap "Start Overlay" again
+
+### Overlay not appearing
+- Check that permission is granted
 - Try restarting the app
+- Ensure you're running Android 6.0 or higher
 
 ### App won't run
 - Run `flutter doctor` to check your Flutter installation
@@ -79,7 +105,7 @@
 ### Build errors
 - Clean and rebuild: `flutter clean && flutter pub get`
 - Check that you're using a compatible Flutter version
-- Ensure Android SDK/Xcode is properly configured
+- Ensure Android SDK is properly configured
 
 ## Building for Release
 
@@ -89,15 +115,20 @@ flutter build apk --release
 ```
 The APK will be in `build/app/outputs/flutter-apk/app-release.apk`
 
-### iOS IPA
+### Install on Device
 ```bash
-flutter build ios --release
+flutter install
 ```
-Then archive and export from Xcode.
+
+## Platform Support
+
+- ✅ **Android**: Fully supported (Android 6.0+)
+- ❌ **iOS**: Not supported (iOS doesn't allow system overlays)
 
 ## Support
 
 For issues or questions:
 - Check the TECHNICAL.md file for implementation details
-- Review Flutter camera plugin documentation: https://pub.dev/packages/camera
+- Review flutter_overlay_window documentation: https://pub.dev/packages/flutter_overlay_window
 - Submit issues on GitHub: https://github.com/allmonty/photo-position/issues
+
