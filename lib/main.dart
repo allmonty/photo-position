@@ -1,7 +1,10 @@
+import 'dart:isolate';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
-import 'overlay_screen.dart';
+import 'package:photo_position/overlay_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isOverlayPermissionGranted = false;
   bool _isOverlayActive = false;
 
+  final String _portName = "photo_position_overlay_port";
+  ReceivePort? _receivePort;
+
   Future<void> _requestOverlayPermission() async {
     final status = await FlutterOverlayWindow.isPermissionGranted();
     if (!status) {
@@ -75,11 +81,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       await FlutterOverlayWindow.showOverlay(
-        flag: OverlayFlag.clickThrough,
+        flag: OverlayFlag.focusPointer,
         overlayTitle: "Photo Position Overlay",
         overlayContent: "Use this overlay to position your camera",
         width: WindowSize.fullCover,
         height: WindowSize.fullCover,
+      );
+
+      //vsend message to overlay to initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+      await FlutterOverlayWindow.shareData(
+        {
+          "shape": "square",
+          "size": 200,
+          "portName": _portName,
+        },
       );
 
       // Update state after a short delay to allow overlay to initialize
@@ -118,6 +134,30 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startBackgroundIsolate();
+  }
+
+  void _startBackgroundIsolate() {
+    // Set up ReceivePort to get messages from overlay
+    // 1. Create a ReceivePort
+    _receivePort = ReceivePort();
+    // 2. Register the SendPort with a name
+    IsolateNameServer.registerPortWithName(_receivePort!.sendPort, _portName);
+    // 3. Listen for messages
+    _receivePort!.listen((message) {
+      setState(() {
+        if (message is Map) {
+          if (message['action'] == 'close_overlay') {
+            _isOverlayActive = false;
+          }
+        }
+      });
+    });
   }
 
   @override
