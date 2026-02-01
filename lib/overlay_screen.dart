@@ -23,9 +23,12 @@ class _OverlayScreenState extends State<OverlayScreen> {
   String? _portName;
 
   double _overlayWindowHeight = 300.0;
+  final double _minOverlayWindowHeight = 200.0;
+  final double _minOverlayWindowWidth = 200.0;
 
-  final double _panelHeight = 300.0;
-  final double _panelWidth = 50.0;
+  final double _panelWidth = 60.0;
+
+  double _initialScale = 200.0;
 
   @override
   void initState() {
@@ -67,10 +70,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
   @override
   Widget build(BuildContext context) {
     setState(() {
-      _overlayWindowHeight = max(_panelHeight, _overlaySize);
+      _overlayWindowHeight = max(_minOverlayWindowHeight, _overlaySize);
     });
     FlutterOverlayWindow.resizeOverlay(
-      (_overlaySize + _panelWidth).toInt(),
+      max(_minOverlayWindowWidth, _overlaySize + _panelWidth).toInt(),
       _overlayWindowHeight.toInt(),
       true,
     );
@@ -93,15 +96,26 @@ class _OverlayScreenState extends State<OverlayScreen> {
             left: 0,
             top: (_overlayWindowHeight - _overlaySize) / 2,
             child: GestureDetector(
-              onPanUpdate: (details) {
-                // setState(() {
-                //   _overlayPosition = Offset(
-                //     _overlayPosition.dx + details.delta.dx,
-                //     _overlayPosition.dy + details.delta.dy,
-                //   );
-                // });
-              },
+              // onPanUpdate: (details) {
+              //   // setState(() {
+              //   //   _overlayPosition = Offset(
+              //   //     _overlayPosition.dx + details.delta.dx,
+              //   //     _overlayPosition.dy + details.delta.dy,
+              //   //   );
+              //   // });
+              // },
               onTap: _toggleControls,
+              onScaleStart: (details) {
+                // Store the initial size when scaling starts
+                setState(() {
+                  _initialScale = _overlaySize;
+                });
+              },
+              onScaleUpdate: (details) {
+                setState(() {
+                  _overlaySize = (_initialScale * details.scale).clamp(50, 500);
+                });
+              },
               child: Container(
                 width: _overlaySize,
                 height: _overlaySize,
@@ -110,8 +124,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                       ? BoxShape.circle
                       : BoxShape.rectangle,
                   border: Border.all(
-                    color: const Color.fromARGB(155, 244, 67,
-                        54), // Bright red border for maximum visibility
+                    color: const Color.fromARGB(200, 244, 67, 54),
                     width: 5, // Thicker border
                   ),
                 ),
@@ -122,11 +135,11 @@ class _OverlayScreenState extends State<OverlayScreen> {
           // Controls panel
           if (_showControls)
             Positioned(
-              top: (_overlayWindowHeight - _panelHeight) / 2,
+              top: (_overlayWindowHeight - 120) / 2,
               right: 0,
               child: Container(
                 width: _panelWidth,
-                height: _panelHeight,
+                height: 120,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.7),
@@ -134,6 +147,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Close button
                     IconButton(
@@ -159,38 +174,38 @@ class _OverlayScreenState extends State<OverlayScreen> {
                       },
                       tooltip: 'Toggle shape',
                     ),
-                    const SizedBox(height: 8),
-                    // Size controls
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      onPressed: () {
-                        setState(() {
-                          _overlaySize = (_overlaySize + 20).clamp(50, 500);
-                        });
-                      },
-                      tooltip: 'Increase size',
-                    ),
-                    Text(
-                      '${_overlaySize.round()}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.remove, color: Colors.white),
-                      onPressed: () {
-                        setState(() {
-                          _overlaySize = (_overlaySize - 20).clamp(50, 500);
-                        });
-                      },
-                      tooltip: 'Decrease size',
-                    ),
-                    const Divider(color: Colors.white54, height: 8),
-                    // Hide controls button
-                    IconButton(
-                      icon:
-                          const Icon(Icons.visibility_off, color: Colors.white),
-                      onPressed: _toggleControls,
-                      tooltip: 'Hide controls',
-                    ),
+                    // const SizedBox(height: 8),
+                    // // Size controls
+                    // IconButton(
+                    //   icon: const Icon(Icons.add, color: Colors.white),
+                    //   onPressed: () {
+                    //     setState(() {
+                    //       _overlaySize = (_overlaySize + 20).clamp(50, 500);
+                    //     });
+                    //   },
+                    //   tooltip: 'Increase size',
+                    // ),
+                    // Text(
+                    //   '${_overlaySize.round()}',
+                    //   style: const TextStyle(color: Colors.white, fontSize: 12),
+                    // ),
+                    // IconButton(
+                    //   icon: const Icon(Icons.remove, color: Colors.white),
+                    //   onPressed: () {
+                    //     setState(() {
+                    //       _overlaySize = (_overlaySize - 20).clamp(50, 500);
+                    //     });
+                    //   },
+                    //   tooltip: 'Decrease size',
+                    // ),
+                    // const Divider(color: Colors.white54, height: 8),
+                    // // Hide controls button
+                    // IconButton(
+                    //   icon:
+                    //       const Icon(Icons.visibility_off, color: Colors.white),
+                    //   onPressed: _toggleControls,
+                    //   tooltip: 'Hide controls',
+                    // ),
                   ],
                 ),
               ),
