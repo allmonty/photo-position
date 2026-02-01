@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+
 import 'overlay_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Check if this is running in the overlay
-  if (await FlutterOverlayWindow.isActive()) {
-    runApp(const MaterialApp(
+  runApp(const PhotoPositionApp());
+}
+
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: OverlayScreen(),
-    ));
-  } else {
-    runApp(const PhotoPositionApp());
-  }
+    ),
+  );
 }
 
 class PhotoPositionApp extends StatelessWidget {
@@ -40,18 +43,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isOverlayPermissionGranted = false;
   bool _isOverlayActive = false;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> _requestPermission() async {
+  Future<void> _requestOverlayPermission() async {
     final status = await FlutterOverlayWindow.isPermissionGranted();
     if (!status) {
       final granted = await FlutterOverlayWindow.requestPermission();
-      if (!granted && mounted) {
+      if (granted! && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Overlay permission is required to use this app'),
@@ -63,22 +62,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showOverlay() async {
-    final status = await FlutterOverlayWindow.isPermissionGranted();
-    if (!status) {
-      await _requestPermission();
-      return;
+    if (!_isOverlayPermissionGranted) {
+      final status = await FlutterOverlayWindow.isPermissionGranted();
+      setState(() {
+        _isOverlayPermissionGranted = status;
+      });
+      if (!status) {
+        await _requestOverlayPermission();
+        return;
+      }
     }
 
     try {
       await FlutterOverlayWindow.showOverlay(
-        enableDrag: false,
+        flag: OverlayFlag.clickThrough,
         overlayTitle: "Photo Position Overlay",
-        overlayContent: 'Positioning overlay active',
-        flag: OverlayFlag.defaultFlag,
-        visibility: NotificationVisibility.visibilityPublic,
-        positionGravity: PositionGravity.none,
-        width: WindowSize.matchParent,
-        height: WindowSize.matchParent,
+        overlayContent: "Use this overlay to position your camera",
+        width: WindowSize.fullCover,
+        height: WindowSize.fullCover,
       );
 
       // Update state after a short delay to allow overlay to initialize
@@ -220,4 +221,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
