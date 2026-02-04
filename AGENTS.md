@@ -1,81 +1,75 @@
-# AGENTS.md - Photo Position Flutter App
+# Agent Guidelines for photo-position
 
-This document provides guidelines and instructions for AI agents working on the Photo Position codebase.
+This document provides guidelines for AI agents working on this Flutter project.
 
 ## Project Overview
 
-Photo Position is a Flutter overlay app that creates positioning overlays (circle/square) that stay on top of other apps. The app uses `flutter_overlay_window` for system-level overlay functionality.
+**photo-position** is a Flutter overlay app that creates a positioning overlay (circle or square) that stays on top of other apps. It uses the `flutter_overlay_window` package for system-level overlay functionality.
 
 ## Build Commands
 
-### Install Dependencies
 ```bash
+# Install dependencies
 flutter pub get
-```
 
-### Run the App
-```bash
+# Run the app on connected device/emulator
 flutter run
-```
 
-### Build Release APK
-```bash
+# Build APK release
 flutter build apk --release
-```
 
-### Build App Bundle
-```bash
+# Build appbundle for Play Store
 flutter build appbundle --release
+
+# Run on specific device
+flutter run -d <device_id>
 ```
 
-## Linting
+## Linting & Analysis
 
-### Run Linter
 ```bash
+# Run Dart analyzer
 flutter analyze
-```
 
-### Apply Fixes
-```bash
-flutter analyze --fix
-```
+# Run linter with rules from analysis_options.yaml
+flutter analyze
 
-The project uses `flutter_lints` with additional rules configured in `analysis_options.yaml`:
-- `prefer_const_constructors: true`
-- `prefer_const_literals_to_create_immutables: true`
-- `avoid_print: false`
+# View detailed analysis options
+cat analysis_options.yaml
+```
 
 ## Testing
 
-### Run All Tests
 ```bash
+# Run all tests
 flutter test
-```
 
-### Run a Single Test File
-```bash
+# Run a specific test file
 flutter test test/widget_test.dart
-```
 
-### Run a Specific Test
-```bash
-flutter test -t "App shows start overlay button"
-```
-
-### Run Tests with Verbose Output
-```bash
+# Run tests with verbose output
 flutter test -v
+
+# Run tests with coverage
+flutter test --coverage
+```
+
+**Single Test Pattern:**
+```bash
+flutter test -v -p test --test-randomize-ordering-seed=random
+# To run a specific test, edit test/widget_test.dart and use:
+flutter test test/widget_test.dart -v
 ```
 
 ## Code Style Guidelines
 
 ### Imports
 
-Order imports by category with blank lines between groups:
+Organize imports in the following order:
 1. Dart core imports (`dart:xxx`)
 2. Flutter framework imports (`package:flutter/xxx`)
 3. Third-party package imports
-4. Local application imports (`package:photo_position/xxx`)
+4. Relative imports for local packages (`package:photo_position/xxx`)
 
 ```dart
 import 'dart:isolate';
@@ -90,75 +84,104 @@ import 'package:photo_position/overlay_screen.dart';
 ### Formatting
 
 - Use 2 spaces for indentation
-- Use trailing commas for multi-line collections and parameter lists
-- Keep lines under 80 characters when possible
-- Use consistent spacing around operators and after commas
+- Maximum line length: 80 characters (recommended)
+- Use trailing commas in widget trees for better formatting
+- Use `const` constructors where possible
+- Prefer `=>` for single-expression functions
 
 ### Types
 
-- Prefer explicit types over `var` for clarity
-- Use `double` for numeric values (sizes, positions, offsets)
-- Use `int` for counts and indices
-- Use `String?` for nullable strings
+- Use explicit types for all variable declarations
+- Use `final` for variables that won't be reassigned
+- Use `const` for compile-time constants
+- Use `late` only when necessary (e.g., in `initState`)
+
+```dart
+// Good
+final String _portName = "photo_position_overlay_port";
+bool _isOverlayActive = false;
+const double defaultSize = 200.0;
+
+// Avoid
+var portName = "photo_position_overlay_port";
+bool isOverlayActive = false;
+final defaultSize = 200.0;
+```
 
 ### Naming Conventions
 
-- **Classes & Enums**: `PascalCase` (e.g., `OverlayScreen`, `OverlayShape`)
-- **Variables & Functions**: `snake_case` (e.g., `_isOverlayActive`, `_showOverlay()`)
-- **Private Members**: Prefix with underscore (e.g., `_receivePort`, `_startBackgroundIsolate()`)
-- **Constants**: `camelCase` with `k` prefix (e.g., `kDefaultSize`)
-- **Booleans**: Prefix with `is`, `has`, or similar (e.g., `_isOverlayPermissionGranted`, `_showControls`)
+**Classes:**
+- PascalCase for all class names
+- Private classes prefixed with underscore
+- Use descriptive names (e.g., `OverlayScreen`, `_OverlayScreenState`)
 
-### Widgets
+**Variables & Functions:**
+- camelCase for variables and functions
+- Private members prefixed with underscore
+- Use verbs for functions (e.g., `_showOverlay()`, `_closeOverlay()`)
 
-- Use `const` constructors for widgets whenever possible
-- Keep widget build methods focused and readable
-- Extract reusable widget components into separate classes
-- Use `super.key` in widget constructors
+**Constants:**
+- camelCase for constants
+- kPrefix for class-level constants (e.g., `kDefaultSize`)
+
+**Enums:**
+- PascalCase for enum names
+- camelCase for values
 
 ```dart
-class PhotoPositionApp extends StatelessWidget {
-  const PhotoPositionApp({super.key});
+enum OverlayShape { circle, square }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Photo Position Overlay',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
+class OverlayScreen extends StatefulWidget {
+  const OverlayScreen({super.key});
+}
+
+class _OverlayScreenState extends State<OverlayScreen> {
+  static const double minSize = 50.0;
+  static const double maxSize = 500.0;
+  bool _showControls = true;
 }
 ```
 
-### State Management
+### Widget Construction
 
-- Use `StatefulWidget` for state that changes during widget lifetime
-- Always check `mounted` before calling `setState()` after async operations
-- Initialize state in `initState()` and clean up in `dispose()`
+- Use `const` constructors for stateless widgets
+- Extract widgets into separate methods for readability
+- Keep build methods clean and readable
+- Use named parameters for widget properties
 
 ```dart
-if (mounted) {
-  setState(() {
-    _isOverlayActive = true;
-  });
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Photo Position Overlay'),
+    ),
+    body: Center(
+      child: Column(
+        children: [
+          _buildOverlayContent(),
+          _buildControlsPanel(),
+        ],
+      ),
+    ),
+  );
 }
 ```
 
 ### Error Handling
 
 - Wrap async operations in try-catch blocks
-- Show errors to users via `ScaffoldMessenger.of(context).showSnackBar()`
-- Handle nullable results explicitly
+- Check `mounted` before calling `setState` after async operations
+- Use `SnackBar` for user feedback on errors
+- Log errors appropriately
 
 ```dart
 try {
   await FlutterOverlayWindow.showOverlay(
     flag: OverlayFlag.defaultFlag,
     overlayTitle: "Photo Position Overlay",
+    overlayContent: "Use this overlay to position your camera",
+    enableDrag: true,
     width: WindowSize.fullCover,
     height: WindowSize.fullCover,
   );
@@ -174,75 +197,107 @@ try {
 }
 ```
 
-### Async/Await
+### State Management
 
-- Use `async/await` over raw Futures for readability
-- Always handle or propagate errors
-- Use `const Duration` for fixed duration values
-
-### Enums
-
-Use enums for related constants:
+- Use `setState` for simple local state
+- Check `mounted` before calling `setState` after async operations
+- Private state variables prefixed with underscore
 
 ```dart
-enum OverlayShape { circle, square }
-```
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isOverlayPermissionGranted = false;
+  bool _isOverlayActive = false;
 
-### Constants
-
-Define magic numbers as constants:
-
-```dart
-static const Duration defaultDuration = Duration(seconds: 3);
-final double minOverlaySize = 50.0;
-```
-
-### Comments
-
-- Use comments sparingly; let code be self-documenting
-- Use `//` for single-line comments
-- Remove commented-out code before submitting
-- Add comments only for non-obvious logic
-
-### Null Safety
-
-- Enable strict null safety (Dart 2.12+)
-- Use `?` for nullable types
-- Use `!` only when you're certain a value is non-null
-- Provide default values where appropriate
-
-### File Structure
-
-- One public class per file (exception: closely related small classes)
-- File name matches class name in `snake_case`
-- Main entry point: `lib/main.dart`
-- Keep files under 300 lines when possible
-
-### File Header
-
-No copyright header required. Start files directly with imports.
-
-### Widget Testing
-
-Follow Flutter testing conventions:
-
-```dart
-void main() {
-  testWidgets('App shows start overlay button', (WidgetTester tester) async {
-    await tester.pumpWidget(const PhotoPositionApp());
-    expect(find.text('Start Overlay'), findsOneWidget);
-  });
+  @override
+  void setState(VoidCallback fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
 }
 ```
 
-## Key Packages
+### Null Safety
 
-- `flutter_overlay_window: ^0.5.0` - For creating system overlays
-- `flutter_test` - For widget testing
-- `flutter_lints: ^2.0.0` - For linting rules
+- Use late initialization sparingly
+- Use null-aware operators where appropriate
+- Use `!` only when certain a value is non-null
+- Use `??` for default values
 
-## Platform-Specific Notes
+```dart
+final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
+sendPort?.send({'action': 'close_overlay'});
+final size = event['size']?.toDouble() ?? defaultSize;
+```
 
-- This app targets Android only
-- Overlay permission must be handled explicitly for Android 6.0+
-- Use `FlutterOverlayWindow.isPermissionGranted()` and `requestPermission()`
+### Documentation
+
+- Document public APIs with dartdoc comments
+- Use `///` for documentation comments
+- Include parameter descriptions for complex functions
+- Add comments for non-obvious logic
+
+```dart
+/// Saves the current overlay position before a resize operation.
+///
+/// This is used to restore the position after the resize interaction ends.
+Future<void> _saveBeforeResizing() async { ... }
+```
+
+## Architecture
+
+- **main.dart**: App entry point, main app widget, home screen
+- **overlay_screen.dart**: Overlay widget with shape, resize, and drag functionality
+- **test/widget_test.dart**: Widget tests using flutter_test
+
+## Key Patterns
+
+### Overlay Communication
+
+Uses `ReceivePort` and `IsolateNameServer` for communication between main app and overlay:
+
+```dart
+// Main app
+_receivePort = ReceivePort();
+IsolateNameServer.registerPortWithName(_receivePort!.sendPort, _portName);
+_receivePort!.listen((message) { ... });
+
+// Overlay
+void _closeOverlay() {
+  final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
+  sendPort?.send({'action': 'close_overlay'});
+  FlutterOverlayWindow.closeOverlay();
+}
+```
+
+### VM Entry Points
+
+Required for overlay to work on some platforms:
+
+```dart
+@pragma("vm:entry-point")
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: OverlayScreen(),
+    ),
+  );
+}
+```
+
+## Dependencies
+
+Key dependencies (see `pubspec.yaml`):
+- `flutter`: Flutter SDK
+- `flutter_overlay_window`: ^0.5.0 (for system overlay functionality)
+- `flutter_test`: SDK (for testing)
+- `flutter_lints`: ^2.0.0 (for linting)
+
+## Additional Notes
+
+- This is an Android-only app (overlay permission is Android-specific)
+- Requires "Draw over other apps" permission
+- Uses Material 3 design (`useMaterial3: true`)
+- Minimum SDK: Flutter 3.0.0

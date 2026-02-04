@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
@@ -36,11 +37,114 @@ class _OverlayScreenState extends State<OverlayScreen> {
   Offset _dragStart = Offset.zero;
 
   bool _isResizing = false;
+  OverlayPosition _beforeResizePosition = const OverlayPosition(0, 0);
 
-  @override
-  void initState() {
-    super.initState();
-    FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+  Future<void> _saveBeforeResizing() async {
+    final position = await FlutterOverlayWindow.getOverlayPosition();
+    setState(() {
+      _beforeResizePosition = position;
+    });
+  }
+
+  void _resizeToFullscreen() async {
+    final displaySize = View.of(context).display.size;
+    await FlutterOverlayWindow.moveOverlay(
+      const OverlayPosition(0, 0),
+    ).then((_) async {
+      await FlutterOverlayWindow.resizeOverlay(
+        displaySize.width.toInt(),
+        displaySize.height.toInt(),
+        false,
+      );
+    });
+  }
+
+  void _resizeBack() async {
+    final shapeWidth = _overlayWidth + resizeHandleSize * 2;
+    final shapeHeight = _overlayHeight + resizeHandleSize * 2;
+    final windowWidth = shapeWidth + panelWidth;
+    final windowHeight = max(shapeHeight, panelHeight);
+    await FlutterOverlayWindow.resizeOverlay(
+      windowWidth.toInt(),
+      windowHeight.toInt(),
+      true,
+    ).then((_) async {
+      await FlutterOverlayWindow.moveOverlay(_beforeResizePosition);
+    });
+  }
+
+  void _startHorizontalResize(DragStartDetails details) {
+    _saveBeforeResizing();
+    _resizeToFullscreen();
+    _initialWidth = _overlayWidth;
+    _dragStart = details.globalPosition;
+    setState(() {
+      _isResizing = true;
+    });
+  }
+
+  void _updateHorizontalResize(DragUpdateDetails details) {
+    final delta = (details.globalPosition - _dragStart).dx;
+    setState(() {
+      _overlayWidth = (_initialWidth + delta * 2).clamp(minSize, maxSize);
+    });
+  }
+
+  void _endHorizontalResize(DragEndDetails details) {
+    setState(() {
+      _isResizing = false;
+    });
+    _resizeBack();
+  }
+
+  void _startVerticalResize(DragStartDetails details) {
+    _saveBeforeResizing();
+    _resizeToFullscreen();
+    _initialHeight = _overlayHeight;
+    _dragStart = details.globalPosition;
+    setState(() {
+      _isResizing = true;
+    });
+  }
+
+  void _updateVerticalResize(DragUpdateDetails details) {
+    final delta = (details.globalPosition - _dragStart).dy;
+    setState(() {
+      _overlayHeight = (_initialHeight + delta * 2).clamp(minSize, maxSize);
+    });
+  }
+
+  void _endVerticalResize(DragEndDetails details) {
+    setState(() {
+      _isResizing = false;
+    });
+    _resizeBack();
+  }
+
+  void _startCircleResize(DragStartDetails details) {
+    _saveBeforeResizing();
+    _resizeToFullscreen();
+    _initialSize = _overlayCircleSize;
+    _dragStart = details.globalPosition;
+    setState(() {
+      _isResizing = true;
+    });
+  }
+
+  void _updateCircleResize(DragUpdateDetails details) {
+    final delta = (details.globalPosition - _dragStart).dy;
+    setState(() {
+      _overlayCircleSize = (_initialSize + delta * 2).clamp(minSize, maxSize);
+      _overlayWidth = _overlayCircleSize;
+      _overlayHeight = _overlayCircleSize;
+    });
+  }
+
+  void _endCircleResize(DragEndDetails details) {
+    setState(() {
+      _isResizing = false;
+    });
+    _resizeBack();
   }
 
   void _handleOverlayMessage(dynamic event) {
@@ -83,71 +187,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
       }
       _overlayWidth = _overlayCircleSize;
       _overlayHeight = _overlayCircleSize;
-    });
-  }
-
-  void _startHorizontalResize(DragStartDetails details) {
-    _initialWidth = _overlayWidth;
-    _dragStart = details.localPosition;
-    setState(() {
-      _isResizing = true;
-    });
-  }
-
-  void _updateHorizontalResize(DragUpdateDetails details) {
-    final delta = details.localPosition.dx - _dragStart.dx;
-    setState(() {
-      _overlayWidth = (_initialWidth + delta * 2).clamp(minSize, maxSize);
-    });
-  }
-
-  void _endHorizontalResize(DragEndDetails details) {
-    setState(() {
-      _isResizing = false;
-    });
-  }
-
-  void _startVerticalResize(DragStartDetails details) {
-    _initialHeight = _overlayHeight;
-    _dragStart = details.localPosition;
-    setState(() {
-      _isResizing = true;
-    });
-  }
-
-  void _updateVerticalResize(DragUpdateDetails details) {
-    final delta = details.localPosition.dy - _dragStart.dy;
-    setState(() {
-      _overlayHeight = (_initialHeight + delta * 2).clamp(minSize, maxSize);
-    });
-  }
-
-  void _endVerticalResize(DragEndDetails details) {
-    setState(() {
-      _isResizing = false;
-    });
-  }
-
-  void _startCircleResize(DragStartDetails details) {
-    _initialSize = _overlayCircleSize;
-    _dragStart = details.localPosition;
-    setState(() {
-      _isResizing = true;
-    });
-  }
-
-  void _updateCircleResize(DragUpdateDetails details) {
-    final delta = details.localPosition.dy - _dragStart.dy;
-    setState(() {
-      _overlayCircleSize = (_initialSize + delta * 2).clamp(minSize, maxSize);
-      _overlayWidth = _overlayCircleSize;
-      _overlayHeight = _overlayCircleSize;
-    });
-  }
-
-  void _endCircleResize(DragEndDetails details) {
-    setState(() {
-      _isResizing = false;
     });
   }
 
@@ -346,6 +385,13 @@ class _OverlayScreenState extends State<OverlayScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+    _resizeBack();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final shapeWidth = _overlayWidth + resizeHandleSize * 2;
     final shapeHeight = _overlayHeight + resizeHandleSize * 2;
@@ -357,11 +403,20 @@ class _OverlayScreenState extends State<OverlayScreen> {
         ? View.of(context).display.size.height
         : max(shapeHeight, panelHeight);
 
-    FlutterOverlayWindow.resizeOverlay(
-      windowWidth.toInt(),
-      windowHeight.toInt(),
-      !_isResizing,
-    );
+    double leftPosition;
+    double topPosition;
+
+    if (_isResizing) {
+      leftPosition = _beforeResizePosition.x +
+          windowWidth / 2 -
+          (_overlayWidth + panelWidth + resizeHandleSize) / 2;
+      topPosition = _beforeResizePosition.y +
+          windowHeight / 2 -
+          (_overlayWidth + panelHeight + resizeHandleSize) / 2;
+    } else {
+      leftPosition = 0;
+      topPosition = 0;
+    }
 
     return Material(
       color: Colors.black87,
@@ -371,9 +426,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
         child: Stack(
           children: [
             Positioned(
-                left: 0,
-                top: (windowHeight - shapeHeight) / 2,
-                child: _buildOverlayContent()),
+              left: leftPosition,
+              top: topPosition,
+              child: _buildOverlayContent(),
+            ),
             if (_showControls) _buildControlsPanel(windowHeight),
           ],
         ),
