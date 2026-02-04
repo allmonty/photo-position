@@ -19,8 +19,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
   static const double maxSize = 500.0;
   static const double defaultSize = 200.0;
   static const double panelWidth = 60.0;
-  static const double panelHeight = 120.0;
+  static const double panelHeight = 150.0;
   static const double borderWidth = 5.0;
+  static const double resizeHandleSize = 20.0;
 
   OverlayShape _overlayShape = OverlayShape.circle;
   double _overlaySize = defaultSize;
@@ -32,6 +33,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   double _initialWidth = defaultSize;
   double _initialHeight = defaultSize;
   double _initialSize = defaultSize;
+  Offset _dragStart = Offset.zero;
 
   @override
   void initState() {
@@ -77,39 +79,167 @@ class _OverlayScreenState extends State<OverlayScreen> {
     });
   }
 
-  void _handleScaleStart(ScaleStartDetails details) {
+  void _startHorizontalResize(DragStartDetails details) {
     _initialWidth = _overlayWidth;
-    _initialHeight = _overlayHeight;
-    _initialSize = _overlaySize;
+    _dragStart = details.localPosition;
   }
 
-  void _handleScaleUpdate(ScaleUpdateDetails details) {
+  void _updateHorizontalResize(DragUpdateDetails details) {
+    final delta = details.localPosition.dx - _dragStart.dx;
     setState(() {
-      if (_overlayShape == OverlayShape.circle) {
-        _overlaySize = (_initialSize * details.scale).clamp(minSize, maxSize);
-      } else {
-        _overlayWidth =
-            (_initialWidth * details.horizontalScale).clamp(minSize, maxSize);
-        _overlayHeight =
-            (_initialHeight * details.verticalScale).clamp(minSize, maxSize);
-      }
+      _overlayWidth = (_initialWidth + delta * 2).clamp(minSize, maxSize);
     });
   }
 
-  Widget _buildOverlayShape() {
-    return Container(
-      width:
-          _overlayShape == OverlayShape.circle ? _overlaySize : _overlayWidth,
-      height:
-          _overlayShape == OverlayShape.circle ? _overlaySize : _overlayHeight,
-      decoration: BoxDecoration(
-        shape: _overlayShape == OverlayShape.circle
-            ? BoxShape.circle
-            : BoxShape.rectangle,
-        border: Border.all(
-          color: const Color.fromARGB(200, 244, 67, 54),
-          width: borderWidth,
+  void _startVerticalResize(DragStartDetails details) {
+    _initialHeight = _overlayHeight;
+    _dragStart = details.localPosition;
+  }
+
+  void _updateVerticalResize(DragUpdateDetails details) {
+    final delta = details.localPosition.dy - _dragStart.dy;
+    setState(() {
+      _overlayHeight = (_initialHeight + delta * 2).clamp(minSize, maxSize);
+    });
+  }
+
+  void _startCircleResize(DragStartDetails details) {
+    _initialSize = _overlaySize;
+    _dragStart = details.localPosition;
+  }
+
+  void _updateCircleResize(DragUpdateDetails details) {
+    final delta = details.localPosition.dy - _dragStart.dy;
+    setState(() {
+      _overlaySize = (_initialSize + delta * 2).clamp(minSize, maxSize);
+    });
+  }
+
+  Widget _buildResizeHandle(
+      {required GestureDragStartCallback onStart,
+      required GestureDragUpdateCallback onUpdate,
+      required Widget child}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragStart: onStart,
+      onVerticalDragUpdate: onUpdate,
+      child: child,
+    );
+  }
+
+  Widget _buildHorizontalResizeHandle(
+      {required GestureDragStartCallback onStart,
+      required GestureDragUpdateCallback onUpdate,
+      required Widget child}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: onStart,
+      onHorizontalDragUpdate: onUpdate,
+      child: child,
+    );
+  }
+
+  Widget _buildOverlayContent() {
+    if (_overlayShape == OverlayShape.circle) {
+      return SizedBox(
+        width: _overlayWidth + resizeHandleSize * 2,
+        height: _overlayHeight + resizeHandleSize * 2,
+        child: Stack(
+          children: [
+            Positioned(
+              left: resizeHandleSize,
+              top: resizeHandleSize,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _toggleControls,
+                child: Container(
+                  width: _overlaySize,
+                  height: _overlaySize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color.fromARGB(200, 244, 67, 54),
+                      width: borderWidth,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildResizeHandle(
+                    child: const SizedBox(
+                        height: resizeHandleSize,
+                        child: Center(
+                            child: SizedBox(
+                                height: 4,
+                                width: 24,
+                                child: Divider(
+                                    color: Colors.white54, thickness: 2)))),
+                    onStart: _startCircleResize,
+                    onUpdate: _updateCircleResize))
+          ],
         ),
+      );
+    }
+
+    return SizedBox(
+      width: _overlayWidth + resizeHandleSize * 2,
+      height: _overlayHeight + resizeHandleSize * 2,
+      child: Stack(
+        children: [
+          Positioned(
+            left: resizeHandleSize,
+            top: resizeHandleSize,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _toggleControls,
+              child: Container(
+                width: _overlayWidth,
+                height: _overlayHeight,
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  border: Border.all(
+                    color: const Color.fromARGB(200, 244, 67, 54),
+                    width: borderWidth,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _buildHorizontalResizeHandle(
+                  child: const SizedBox(
+                      width: resizeHandleSize,
+                      child: Center(
+                          child: SizedBox(
+                              width: 4,
+                              height: 24,
+                              child: VerticalDivider(
+                                  color: Colors.white54, thickness: 2)))),
+                  onStart: _startHorizontalResize,
+                  onUpdate: _updateHorizontalResize)),
+          Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildResizeHandle(
+                  child: const SizedBox(
+                      height: resizeHandleSize,
+                      child: Center(
+                          child: SizedBox(
+                              height: 4,
+                              width: 24,
+                              child: Divider(
+                                  color: Colors.white54, thickness: 2)))),
+                  onStart: _startVerticalResize,
+                  onUpdate: _updateVerticalResize)),
+        ],
       ),
     );
   }
@@ -130,10 +260,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildIconButton(
-              icon: Icons.close,
-              tooltip: 'Close overlay',
-              onPressed: _closeOverlay,
-            ),
+                icon: Icons.close,
+                tooltip: 'Close overlay',
+                onPressed: _closeOverlay),
             const Divider(color: Colors.white54, height: 8),
             _buildIconButton(
               icon: _overlayShape == OverlayShape.circle
@@ -148,47 +277,35 @@ class _OverlayScreenState extends State<OverlayScreen> {
     );
   }
 
-  IconButton _buildIconButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-  }) {
+  IconButton _buildIconButton(
+      {required IconData icon,
+      required String tooltip,
+      required VoidCallback onPressed}) {
     return IconButton(
-      icon: Icon(icon, color: Colors.white),
-      onPressed: onPressed,
-      tooltip: tooltip,
-    );
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+        tooltip: tooltip);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isCircle = _overlayShape == OverlayShape.circle;
-    final shapeWidth = isCircle ? _overlaySize : _overlayWidth;
-    final shapeHeight = isCircle ? _overlaySize : _overlayHeight;
+    final shapeWidth =  _overlayWidth + resizeHandleSize * 2;
+    final shapeHeight = _overlayHeight + resizeHandleSize * 2;
 
     final windowWidth = shapeWidth + panelWidth;
-    final windowHeight = max(shapeHeight, panelWidth);
+    final windowHeight = max(shapeHeight, panelHeight);
 
     FlutterOverlayWindow.resizeOverlay(
-      windowWidth.toInt(),
-      windowHeight.toInt(),
-      true,
-    );
+        windowWidth.toInt(), windowHeight.toInt(), true);
 
     return Material(
       color: Colors.transparent,
       child: Stack(
         children: [
           Positioned(
-            left: 0,
-            top: (windowHeight - shapeHeight) / 2,
-            child: GestureDetector(
-              onTap: _toggleControls,
-              onScaleStart: _handleScaleStart,
-              onScaleUpdate: _handleScaleUpdate,
-              child: _buildOverlayShape(),
-            ),
-          ),
+              left: 0,
+              top: (windowHeight - shapeHeight) / 2,
+              child: _buildOverlayContent()),
           if (_showControls) _buildControlsPanel(windowHeight),
         ],
       ),
