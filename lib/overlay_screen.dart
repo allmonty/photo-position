@@ -15,223 +15,181 @@ class OverlayScreen extends StatefulWidget {
 }
 
 class _OverlayScreenState extends State<OverlayScreen> {
+  static const double minSize = 50.0;
+  static const double maxSize = 500.0;
+  static const double defaultSize = 200.0;
+  static const double panelWidth = 60.0;
+  static const double panelHeight = 120.0;
+  static const double borderWidth = 5.0;
+
   OverlayShape _overlayShape = OverlayShape.circle;
-  double _overlaySize = 200.0;
-  // Offset _overlayPosition = const Offset(0, 0);
+  double _overlaySize = defaultSize;
+  double _overlayWidth = defaultSize;
+  double _overlayHeight = defaultSize;
   bool _showControls = true;
 
   String? _portName;
-
-  double _overlayWindowHeight = 300.0;
-  final double _minOverlayWindowHeight = 200.0;
-  final double _minOverlayWindowWidth = 200.0;
-
-  final double _panelWidth = 60.0;
-
-  double _initialScale = 200.0;
+  double _initialWidth = defaultSize;
+  double _initialHeight = defaultSize;
+  double _initialSize = defaultSize;
 
   @override
   void initState() {
     super.initState();
-    // Listen for messages from the main app
-    FlutterOverlayWindow.overlayListener.listen((event) {
-      if (event is Map) {
-        setState(() {
-          if (event['shape'] != null) {
-            _overlayShape = event['shape'] == 'circle'
-                ? OverlayShape.circle
-                : OverlayShape.square;
-          }
-          if (event['size'] != null) {
-            _overlaySize = event['size'].toDouble();
-          }
-          if (event['portName'] != null) {
-            _portName = event['portName'];
-          }
-        });
+    FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+  }
+
+  void _handleOverlayMessage(dynamic event) {
+    if (event is! Map) return;
+    setState(() {
+      if (event['shape'] != null) {
+        _overlayShape = event['shape'] == 'circle'
+            ? OverlayShape.circle
+            : OverlayShape.square;
+      }
+      if (event['size'] != null) {
+        final size = event['size'].toDouble();
+        _overlaySize = size;
+        _overlayWidth = size;
+        _overlayHeight = size;
+      }
+      if (event['portName'] != null) {
+        _portName = event['portName'];
       }
     });
   }
 
   void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-    });
+    setState(() => _showControls = !_showControls);
   }
 
   void _closeOverlay() {
-    // Notify main app before closing
     final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
-    sendPort?.send({"action": "close_overlay"});
-    // Close the overlay
+    sendPort?.send({'action': 'close_overlay'});
     FlutterOverlayWindow.closeOverlay();
+  }
+
+  void _toggleShape() {
+    setState(() {
+      _overlayShape = _overlayShape == OverlayShape.circle
+          ? OverlayShape.square
+          : OverlayShape.circle;
+    });
+  }
+
+  void _handleScaleStart(ScaleStartDetails details) {
+    _initialWidth = _overlayWidth;
+    _initialHeight = _overlayHeight;
+    _initialSize = _overlaySize;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    setState(() {
+      if (_overlayShape == OverlayShape.circle) {
+        _overlaySize = (_initialSize * details.scale).clamp(minSize, maxSize);
+      } else {
+        _overlayWidth =
+            (_initialWidth * details.horizontalScale).clamp(minSize, maxSize);
+        _overlayHeight =
+            (_initialHeight * details.verticalScale).clamp(minSize, maxSize);
+      }
+    });
+  }
+
+  Widget _buildOverlayShape() {
+    return Container(
+      width:
+          _overlayShape == OverlayShape.circle ? _overlaySize : _overlayWidth,
+      height:
+          _overlayShape == OverlayShape.circle ? _overlaySize : _overlayHeight,
+      decoration: BoxDecoration(
+        shape: _overlayShape == OverlayShape.circle
+            ? BoxShape.circle
+            : BoxShape.rectangle,
+        border: Border.all(
+          color: const Color.fromARGB(200, 244, 67, 54),
+          width: borderWidth,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlsPanel(double windowHeight) {
+    return Positioned(
+      top: (windowHeight - panelHeight) / 2,
+      right: 0,
+      child: Container(
+        width: panelWidth,
+        height: panelHeight,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black87,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildIconButton(
+              icon: Icons.close,
+              tooltip: 'Close overlay',
+              onPressed: _closeOverlay,
+            ),
+            const Divider(color: Colors.white54, height: 8),
+            _buildIconButton(
+              icon: _overlayShape == OverlayShape.circle
+                  ? Icons.circle_outlined
+                  : Icons.square_outlined,
+              tooltip: 'Toggle shape',
+              onPressed: _toggleShape,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconButton _buildIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Icon(icon, color: Colors.white),
+      onPressed: onPressed,
+      tooltip: tooltip,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    setState(() {
-      _overlayWindowHeight = max(_minOverlayWindowHeight, _overlaySize);
-    });
+    final isCircle = _overlayShape == OverlayShape.circle;
+    final shapeWidth = isCircle ? _overlaySize : _overlayWidth;
+    final shapeHeight = isCircle ? _overlaySize : _overlayHeight;
+
+    final windowWidth = shapeWidth + panelWidth;
+    final windowHeight = max(shapeHeight, panelWidth);
+
     FlutterOverlayWindow.resizeOverlay(
-      max(_minOverlayWindowWidth, _overlaySize + _panelWidth).toInt(),
-      _overlayWindowHeight.toInt(),
+      windowWidth.toInt(),
+      windowHeight.toInt(),
       true,
     );
+
     return Material(
       color: Colors.transparent,
       child: Stack(
         children: [
-          // Full screen tap area to make it obvious overlay is active
-          // Positioned.fill(
-          //   child: GestureDetector(
-          //     onTap: _toggleControls,
-          //     child: Container(
-          //       color: Colors.transparent,
-          //     ),
-          //   ),
-          // ),
-
-          // The draggable overlay shape
           Positioned(
             left: 0,
-            top: (_overlayWindowHeight - _overlaySize) / 2,
+            top: (windowHeight - shapeHeight) / 2,
             child: GestureDetector(
-              // onPanUpdate: (details) {
-              //   // setState(() {
-              //   //   _overlayPosition = Offset(
-              //   //     _overlayPosition.dx + details.delta.dx,
-              //   //     _overlayPosition.dy + details.delta.dy,
-              //   //   );
-              //   // });
-              // },
               onTap: _toggleControls,
-              onScaleStart: (details) {
-                // Store the initial size when scaling starts
-                setState(() {
-                  _initialScale = _overlaySize;
-                });
-              },
-              onScaleUpdate: (details) {
-                setState(() {
-                  _overlaySize = (_initialScale * details.scale).clamp(50, 500);
-                });
-              },
-              child: Container(
-                width: _overlaySize,
-                height: _overlaySize,
-                decoration: BoxDecoration(
-                  shape: _overlayShape == OverlayShape.circle
-                      ? BoxShape.circle
-                      : BoxShape.rectangle,
-                  border: Border.all(
-                    color: const Color.fromARGB(200, 244, 67, 54),
-                    width: 5, // Thicker border
-                  ),
-                ),
-              ),
+              onScaleStart: _handleScaleStart,
+              onScaleUpdate: _handleScaleUpdate,
+              child: _buildOverlayShape(),
             ),
           ),
-
-          // Controls panel
-          if (_showControls)
-            Positioned(
-              top: (_overlayWindowHeight - 120) / 2,
-              right: 0,
-              child: Container(
-                width: _panelWidth,
-                height: 120,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Close button
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => _closeOverlay(),
-                      tooltip: 'Close overlay',
-                    ),
-                    const Divider(color: Colors.white54, height: 8),
-                    // Shape toggle
-                    IconButton(
-                      icon: Icon(
-                        _overlayShape == OverlayShape.circle
-                            ? Icons.circle_outlined
-                            : Icons.square_outlined,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _overlayShape = _overlayShape == OverlayShape.circle
-                              ? OverlayShape.square
-                              : OverlayShape.circle;
-                        });
-                      },
-                      tooltip: 'Toggle shape',
-                    ),
-                    // const SizedBox(height: 8),
-                    // // Size controls
-                    // IconButton(
-                    //   icon: const Icon(Icons.add, color: Colors.white),
-                    //   onPressed: () {
-                    //     setState(() {
-                    //       _overlaySize = (_overlaySize + 20).clamp(50, 500);
-                    //     });
-                    //   },
-                    //   tooltip: 'Increase size',
-                    // ),
-                    // Text(
-                    //   '${_overlaySize.round()}',
-                    //   style: const TextStyle(color: Colors.white, fontSize: 12),
-                    // ),
-                    // IconButton(
-                    //   icon: const Icon(Icons.remove, color: Colors.white),
-                    //   onPressed: () {
-                    //     setState(() {
-                    //       _overlaySize = (_overlaySize - 20).clamp(50, 500);
-                    //     });
-                    //   },
-                    //   tooltip: 'Decrease size',
-                    // ),
-                    // const Divider(color: Colors.white54, height: 8),
-                    // // Hide controls button
-                    // IconButton(
-                    //   icon:
-                    //       const Icon(Icons.visibility_off, color: Colors.white),
-                    //   onPressed: _toggleControls,
-                    //   tooltip: 'Hide controls',
-                    // ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Instruction text when controls are hidden
-          // if (!_showControls)
-          //   Positioned(
-          //     top: 50,
-          //     left: 0,
-          //     right: 0,
-          //     child: Center(
-          //       child: Container(
-          //         padding:
-          //             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          //         decoration: BoxDecoration(
-          //           color: Colors.black.withOpacity(0.7),
-          //           borderRadius: BorderRadius.circular(8),
-          //         ),
-          //         child: const Text(
-          //           'Tap overlay to show controls',
-          //           style: TextStyle(color: Colors.white, fontSize: 12),
-          //         ),
-          //       ),
-          //     ),
-          //   ),
+          if (_showControls) _buildControlsPanel(windowHeight),
         ],
       ),
     );

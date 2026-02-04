@@ -89,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
         height: WindowSize.fullCover,
       );
 
-      //vsend message to overlay to initialize
       await Future.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
