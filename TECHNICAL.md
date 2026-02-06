@@ -42,7 +42,7 @@ When `FlutterOverlayWindow.showOverlay()` is called:
 
 ### Two-Instance Architecture
 
-The app runs as TWO separate Flutter instances:
+The app runs as **two separate Flutter instances**:
 
 **Instance 1 - Main App:**
 ```dart
@@ -64,16 +64,11 @@ OverlayScreen (transparent background)
       └─ Hide controls button
 ```
 
-The entry point differentiates:
-```dart
-if (await FlutterOverlayWindow.isActive()) {
-  // Overlay mode - show OverlayScreen
-  runApp(MaterialApp(home: OverlayScreen()));
-} else {
-  // Main app mode - show HomeScreen
-  runApp(PhotoPositionApp());
-}
-```
+The entry point (`main.dart`) differentiates based on mode:
+- `main()` - Main app entry point
+- `overlayMain()` - Overlay window entry point (marked with `@pragma("vm:entry-point")`)
+
+When `FlutterOverlayWindow.showOverlay()` is called with `overlayContent: 'overlayMain'`, it launches the overlay instance.
 
 ### Features
 
@@ -102,60 +97,7 @@ pubspec.yaml               - Dependencies (flutter_overlay_window)
 
 ### Dependencies
 
-- **flutter_overlay_window**: ^0.5.2 - System overlay package
-
-### Permissions
-
-#### Android (AndroidManifest.xml)
-
-Required permissions:
-- `android.permission.SYSTEM_ALERT_WINDOW` - Draw over other apps
-- `android.permission.FOREGROUND_SERVICE` - Run overlay service
-
-Required service:
-```xml
-<service
-    android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
-    android:exported="false"
-    android:foregroundServiceType="specialUse">
-</service>
-```
-
-### Running the App
-
-1. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-
-2. Run on Android device:
-   ```bash
-   flutter run
-   ```
-
-3. Grant overlay permission when prompted
-
-4. Tap "Start Overlay" in the app
-
-5. Open camera app - overlay will stay on top
-
-6. Or build for release:
-   ```bash
-   flutter build apk
-   ```
-
-### Testing
-
-Key test scenarios:
-
-1. **Permission Request**: Verify overlay permission prompt appears
-2. **Overlay Creation**: Confirm overlay appears and is transparent
-3. **Drag Functionality**: Test dragging overlay to different positions
-4. **Shape Toggle**: Switch between circle and square
-5. **Size Adjustment**: Test +/- buttons change size
-6. **Stay On Top**: Verify overlay stays above camera and other apps
-7. **Control Toggle**: Hide/show controls by tapping overlay
-8. **Close Overlay**: Test closing from both control panel and main app
+- **flutter_overlay_window**: ^0.5.0 - System overlay package
 
 ### Platform Support
 
@@ -164,14 +106,13 @@ Key test scenarios:
 - Works on Android 6.0 (Marshmallow) and above
 
 **iOS**: Not currently supported
-- flutter_overlay_window is Android-only
+- `flutter_overlay_window` is Android-only
 - iOS has restrictions on system overlays
 
 ### Known Limitations
 
 - Android only (iOS doesn't support system overlays)
 - Requires manual permission grant on Android 6.0+
-- Overlay persists until manually closed
 - Limited to circle and square shapes
 
 ### Future Enhancements

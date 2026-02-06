@@ -131,12 +131,13 @@ photo_position/
 The app uses the `flutter_overlay_window` package which:
 
 1. Creates a system-level window with `SYSTEM_ALERT_WINDOW` permission
-2. Runs a separate Flutter instance for the overlay
+2. Runs a separate Flutter instance for the overlay (`overlayMain()` entry point)
 3. Displays above all other apps including camera
 
 ```dart
 FlutterOverlayWindow.showOverlay(
   enableDrag: false,            // We handle dragging manually
+  overlayContent: 'overlayMain', // VM entry point name
   width: WindowSize.matchParent, // Full screen transparent
   height: WindowSize.matchParent,
   ...

@@ -246,7 +246,18 @@ Future<void> _saveBeforeResizing() async { ... }
 
 ## Architecture
 
-- **main.dart**: App entry point, main app widget, home screen
+### Two-Instance Architecture
+
+The app runs as **two separate Flutter instances**:
+
+1. **Main App** (`PhotoPositionApp` → `HomeScreen`): Standard app for starting/stopping the overlay
+2. **Overlay Window** (`OverlayScreen`): Separate instance showing the draggable overlay
+
+The entry point (`main.dart`) differentiates based on mode, with `overlayMain()` serving as the VM entry point for the overlay instance.
+
+### File Structure
+
+- **main.dart**: App entry point, main app widget, home screen, and overlay entry point (`overlayMain()`)
 - **overlay_screen.dart**: Overlay widget with shape, resize, and drag functionality
 - **test/widget_test.dart**: Widget tests using flutter_test
 
@@ -272,7 +283,7 @@ void _closeOverlay() {
 
 ### VM Entry Points
 
-Required for overlay to work on some platforms:
+The overlay requires a `@pragma("vm:entry-point")` annotation on the `overlayMain()` function to work correctly on all platforms:
 
 ```dart
 @pragma("vm:entry-point")
@@ -295,9 +306,17 @@ Key dependencies (see `pubspec.yaml`):
 - `flutter_test`: SDK (for testing)
 - `flutter_lints`: ^2.0.0 (for linting)
 
-## Additional Notes
+## Platform-Specific Notes
 
-- This is an Android-only app (overlay permission is Android-specific)
+### Android-Only
+
+This app is **Android-only** because:
+- Requires "Draw over other apps" permission (`SYSTEM_ALERT_WINDOW`)
+- Uses `flutter_overlay_window` package (Android-only)
+- iOS has strict restrictions on system overlays
+
+### Additional Notes
+
 - Requires "Draw over other apps" permission
 - Uses Material 3 design (`useMaterial3: true`)
 - Minimum SDK: Flutter 3.0.0
