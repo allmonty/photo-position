@@ -30,7 +30,10 @@ class PhotoPositionApp extends StatelessWidget {
     return MaterialApp(
       title: 'Photo Position Overlay',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.dark,
+          seedColor: Colors.purple,
+        ),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
@@ -85,10 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         overlayTitle: "Photo Position Overlay",
         overlayContent: "Use this overlay to position your camera",
         enableDrag: true,
-        width: WindowSize.fullCover,
-        height: WindowSize.fullCover,
       );
-
       await Future.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
@@ -97,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
           "portName": _portName,
         },
       );
-
       // Update state after a short delay to allow overlay to initialize
       if (mounted) {
         setState(() {
@@ -176,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Icon(
                 Icons.crop_square,
                 size: 100,
-                color: Colors.blue,
+                color: Colors.red,
               ),
               const SizedBox(height: 24),
               const Text(

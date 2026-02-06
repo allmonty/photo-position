@@ -2,7 +2,6 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
@@ -18,11 +17,13 @@ class OverlayScreen extends StatefulWidget {
 class _OverlayScreenState extends State<OverlayScreen> {
   static const double minSize = 50.0;
   static const double maxSize = 500.0;
+
   static const double defaultSize = 200.0;
+  static const double resizeHandleSize = 20.0;
   static const double panelWidth = 60.0;
   static const double panelHeight = 120.0;
+
   static const double borderWidth = 5.0;
-  static const double resizeHandleSize = 20.0;
 
   OverlayShape _overlayShape = OverlayShape.circle;
   double _overlayCircleSize = defaultSize;
@@ -30,52 +31,33 @@ class _OverlayScreenState extends State<OverlayScreen> {
   double _overlayHeight = defaultSize;
   bool _showControls = true;
 
-  String? _portName;
+  Offset _dragStart = Offset.zero;
   double _initialWidth = defaultSize;
   double _initialHeight = defaultSize;
   double _initialSize = defaultSize;
-  Offset _dragStart = Offset.zero;
 
+  String? _portName;
   bool _isResizing = false;
-  OverlayPosition _beforeResizePosition = const OverlayPosition(0, 0);
 
-  Future<void> _saveBeforeResizing() async {
-    final position = await FlutterOverlayWindow.getOverlayPosition();
-    setState(() {
-      _beforeResizePosition = position;
-    });
-  }
-
-  void _resizeToFullscreen() async {
-    final displaySize = View.of(context).display.size;
-    await FlutterOverlayWindow.moveOverlay(
-      const OverlayPosition(0, 0),
-    ).then((_) async {
+  Future<void> _fitWindowSize(
+      {double width = defaultSize,
+      double height = defaultSize,
+      bool isResizing = false}) async {
+    try {
       await FlutterOverlayWindow.resizeOverlay(
-        displaySize.width.toInt(),
-        displaySize.height.toInt(),
-        false,
-      );
-    });
-  }
-
-  void _resizeBack() async {
-    final shapeWidth = _overlayWidth + resizeHandleSize * 2;
-    final shapeHeight = _overlayHeight + resizeHandleSize * 2;
-    final windowWidth = shapeWidth + panelWidth;
-    final windowHeight = max(shapeHeight, panelHeight);
-    await FlutterOverlayWindow.resizeOverlay(
-      windowWidth.toInt(),
-      windowHeight.toInt(),
-      true,
-    ).then((_) async {
-      await FlutterOverlayWindow.moveOverlay(_beforeResizePosition);
-    });
+          width.toInt(), height.toInt(), !isResizing);
+    } catch (e) {
+      // Overlay service may not be ready yet; retry after a short delay.
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      try {
+        await FlutterOverlayWindow.resizeOverlay(
+            width.toInt(), height.toInt(), !isResizing);
+      } catch (_) {}
+    }
   }
 
   void _startHorizontalResize(DragStartDetails details) {
-    _saveBeforeResizing();
-    _resizeToFullscreen();
     _initialWidth = _overlayWidth;
     _dragStart = details.globalPosition;
     setState(() {
@@ -86,7 +68,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void _updateHorizontalResize(DragUpdateDetails details) {
     final delta = (details.globalPosition - _dragStart).dx;
     setState(() {
-      _overlayWidth = (_initialWidth + delta * 2).clamp(minSize, maxSize);
+      _overlayWidth = (_initialWidth + delta).clamp(minSize, maxSize);
     });
   }
 
@@ -94,12 +76,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       _isResizing = false;
     });
-    _resizeBack();
   }
 
   void _startVerticalResize(DragStartDetails details) {
-    _saveBeforeResizing();
-    _resizeToFullscreen();
     _initialHeight = _overlayHeight;
     _dragStart = details.globalPosition;
     setState(() {
@@ -110,7 +89,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void _updateVerticalResize(DragUpdateDetails details) {
     final delta = (details.globalPosition - _dragStart).dy;
     setState(() {
-      _overlayHeight = (_initialHeight + delta * 2).clamp(minSize, maxSize);
+      _overlayHeight = (_initialHeight + delta).clamp(minSize, maxSize);
     });
   }
 
@@ -118,12 +97,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       _isResizing = false;
     });
-    _resizeBack();
+    // _resizeBack();
   }
 
   void _startCircleResize(DragStartDetails details) {
-    _saveBeforeResizing();
-    _resizeToFullscreen();
     _initialSize = _overlayCircleSize;
     _dragStart = details.globalPosition;
     setState(() {
@@ -134,7 +111,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void _updateCircleResize(DragUpdateDetails details) {
     final delta = (details.globalPosition - _dragStart).dy;
     setState(() {
-      _overlayCircleSize = (_initialSize + delta * 2).clamp(minSize, maxSize);
+      _overlayCircleSize = (_initialSize + delta).clamp(minSize, maxSize);
       _overlayWidth = _overlayCircleSize;
       _overlayHeight = _overlayCircleSize;
     });
@@ -144,7 +121,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       _isResizing = false;
     });
-    _resizeBack();
   }
 
   void _handleOverlayMessage(dynamic event) {
@@ -388,46 +364,27 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void initState() {
     super.initState();
     FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
-    _resizeBack();
   }
 
   @override
   Widget build(BuildContext context) {
     final shapeWidth = _overlayWidth + resizeHandleSize * 2;
     final shapeHeight = _overlayHeight + resizeHandleSize * 2;
+    final windowWidth = shapeWidth + panelWidth;
+    final windowHeight = max(shapeHeight, panelHeight);
 
-    final windowWidth = _isResizing
-        ? View.of(context).display.size.width
-        : shapeWidth + panelWidth;
-    final windowHeight = _isResizing
-        ? View.of(context).display.size.height
-        : max(shapeHeight, panelHeight);
-
-    double leftPosition;
-    double topPosition;
-
-    if (_isResizing) {
-      leftPosition = _beforeResizePosition.x +
-          windowWidth / 2 -
-          (_overlayWidth + panelWidth + resizeHandleSize) / 2;
-      topPosition = _beforeResizePosition.y +
-          windowHeight / 2 -
-          (_overlayWidth + panelHeight + resizeHandleSize) / 2;
-    } else {
-      leftPosition = 0;
-      topPosition = 0;
-    }
+    _fitWindowSize(width: windowWidth, height: windowHeight, isResizing: _isResizing);
 
     return Material(
-      color: Colors.black87,
+      color: Colors.transparent,
       child: SizedBox(
         width: windowWidth,
         height: windowHeight,
         child: Stack(
           children: [
             Positioned(
-              left: leftPosition,
-              top: topPosition,
+              left: 0,
+              top: 0,
               child: _buildOverlayContent(),
             ),
             if (_showControls) _buildControlsPanel(windowHeight),

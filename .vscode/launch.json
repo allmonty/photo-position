@@ -5,8 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            // To be used while making code changes.
-            "name": "Debug",
+            "name": "Chrome (Debug)",
             "type": "dart",
             "request": "launch",
             "program": "lib/main.dart",
@@ -16,26 +15,35 @@
             ]
         },
         {
-            "name": "Debug Android",
+            "name": "Chrome (Release)",
             "type": "dart",
             "request": "launch",
             "program": "lib/main.dart",
+            "flutterMode": "release",
             "args": [
                 "-d",
-                "emulator-5554"
+                "chrome"
             ]
         },
         {
-            "name": "colortrix (profile mode)",
-            "request": "launch",
+            "name": "Android Emulator (Debug)",
             "type": "dart",
-            "flutterMode": "profile"
+            "request": "launch",
+            "program": "lib/main.dart"
         },
         {
-            "name": "colortrix (release mode)",
-            "request": "launch",
+            "name": "Android Emulator (Release)",
             "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "Android Emulator (Profile)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "flutterMode": "profile"
         }
     ]
 }
