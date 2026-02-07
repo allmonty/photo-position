@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import 'package:photo_position/overlay_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,8 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await Future.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
-          "shape": "square",
-          "size": 200,
           "portName": _portName,
         },
       );
@@ -117,7 +116,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _closeOverlay() async {
     try {
-      await FlutterOverlayWindow.closeOverlay();
+      await FlutterOverlayWindow.shareData({
+        "action": "close_overlay_and_reset",
+      });
       if (mounted) {
         setState(() {
           _isOverlayActive = false;
