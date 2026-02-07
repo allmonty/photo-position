@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum OverlayShape { circle, square }
 
@@ -38,6 +39,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
   String? _portName;
   bool _isResizing = false;
+  bool _loadedSettings = false;
 
   Future<void> _fitWindowSize(
       {double width = defaultSize,
@@ -126,17 +128,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void _handleOverlayMessage(dynamic event) {
     if (event is! Map) return;
     setState(() {
-      if (event['shape'] != null) {
-        _overlayShape = event['shape'] == 'circle'
-            ? OverlayShape.circle
-            : OverlayShape.square;
-      }
-      if (event['size'] != null) {
-        final size = event['size'].toDouble();
-        _overlayCircleSize = size;
-        _overlayWidth = size;
-        _overlayHeight = size;
-      }
       if (event['portName'] != null) {
         _portName = event['portName'];
       }
@@ -147,7 +138,21 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() => _showControls = !_showControls);
   }
 
-  void _closeOverlay() {
+  void _closeOverlay() async {
+    OverlayPosition position = await FlutterOverlayWindow.getOverlayPosition();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('overlayWidth', _overlayWidth);
+    await prefs.setDouble('overlayHeight', _overlayHeight);
+    await prefs.setDouble('overlayCircleSize', _overlayCircleSize);
+    await prefs.setString('overlayShape', _overlayShape.toString());
+    await prefs.setDouble('overlayWinsPosX', position.x);
+    await prefs.setDouble('overlayWinsPosY', position.y);
+
+    setState(() {
+      _loadedSettings = false;
+    });
+
     final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
     sendPort?.send({'action': 'close_overlay'});
     FlutterOverlayWindow.closeOverlay();
@@ -360,6 +365,30 @@ class _OverlayScreenState extends State<OverlayScreen> {
         tooltip: tooltip);
   }
 
+  void loadSavedSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _overlayWidth = prefs.getDouble('overlayWidth') ?? defaultSize;
+      _overlayHeight = prefs.getDouble('overlayHeight') ?? defaultSize;
+      _overlayCircleSize = prefs.getDouble('overlayCircleSize') ?? defaultSize;
+      String? shapeStr = prefs.getString('overlayShape');
+      if (shapeStr != null) {
+        _overlayShape = shapeStr == 'OverlayShape.circle'
+            ? OverlayShape.circle
+            : OverlayShape.square;
+      }
+      final overlayWinsPosX = prefs.getDouble('overlayWinsPosX') ?? 0;
+      final overlayWinsPosY = prefs.getDouble('overlayWinsPosY') ?? 0;
+      print("{$overlayWinsPosX} {$overlayWinsPosY}");
+      FlutterOverlayWindow.moveOverlay(
+        OverlayPosition(
+          overlayWinsPosX,
+          overlayWinsPosY,
+        ),
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -368,12 +397,20 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_loadedSettings) {
+      loadSavedSettings();
+      setState(() {
+        _loadedSettings = true;
+      });
+    }
+
     final shapeWidth = _overlayWidth + resizeHandleSize * 2;
     final shapeHeight = _overlayHeight + resizeHandleSize * 2;
     final windowWidth = shapeWidth + panelWidth;
     final windowHeight = max(shapeHeight, panelHeight);
 
-    _fitWindowSize(width: windowWidth, height: windowHeight, isResizing: _isResizing);
+    _fitWindowSize(
+        width: windowWidth, height: windowHeight, isResizing: _isResizing);
 
     return Material(
       color: Colors.transparent,

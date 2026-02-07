@@ -92,8 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await Future.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
-          "shape": "square",
-          "size": 200,
           "portName": _portName,
         },
       );
