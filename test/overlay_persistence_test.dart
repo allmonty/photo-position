@@ -51,8 +51,12 @@ void main() {
     );
 
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel('dev.flutter.pigeon.sensors_plus.SensorsStreamApi.startAccelerometer'), 
-      (call) async => null,
+      const MethodChannel('dev.fluttercommunity.plus/sensors/accelerometer'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'listen') return null;
+        if (methodCall.method == 'cancel') return null;
+        return null;
+      },
     );
 
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
@@ -62,8 +66,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
     await tester.pumpAndSettle();
     
-    // Advance virtual time by 350ms to allow the addPostFrameCallback + Future.delayed to tick
-    await tester.pump(const Duration(milliseconds: 350));
+    // Advance virtual time to allow the restoration logic to complete
+    await tester.pump(const Duration(seconds: 2));
 
     final moveCalls = log.where((call) => call.method == 'moveOverlay').toList();
     // It should only be queried once during the initState
@@ -108,8 +112,12 @@ void main() {
     );
 
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel('dev.flutter.pigeon.sensors_plus.SensorsStreamApi.startAccelerometer'), 
-      (call) async => null,
+      const MethodChannel('dev.fluttercommunity.plus/sensors/accelerometer'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'listen') return null;
+        if (methodCall.method == 'cancel') return null;
+        return null;
+      },
     );
 
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
@@ -185,8 +193,12 @@ void main() {
       (MethodCall methodCall) async => null,
     );
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel('dev.flutter.pigeon.sensors_plus.SensorsStreamApi.startAccelerometer'), 
-      (call) async => null,
+      const MethodChannel('dev.fluttercommunity.plus/sensors/accelerometer'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'listen') return null;
+        if (methodCall.method == 'cancel') return null;
+        return null;
+      },
     );
 
     // ------------------------------------------------------------------------
@@ -233,9 +245,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
     await tester.pumpAndSettle();
 
-    // Since we added a 300ms delay in initState to wait for the OS to draw the window,
-    // we need to advance the virtual clock in the test to let the Future resolve.
-    await tester.pump(const Duration(milliseconds: 350));
+    // Advance virtual time to allow the restoration logic to complete
+    await tester.pump(const Duration(seconds: 2));
 
     // VERIFY: `initState` calls `loadSavedSettings()`, which fetches the coordinates.
     // Then it tells the window to relocate via `moveOverlay`.

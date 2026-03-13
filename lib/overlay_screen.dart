@@ -5,10 +5,18 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum OverlayShape { circle, square }
+
+enum OrientationState {
+  portraitUp,
+  portraitDown,
+  landscapeLeft,
+  landscapeRight,
+  unknown
+}
 
 class OverlayScreen extends StatefulWidget {
   const OverlayScreen({super.key});
@@ -42,9 +50,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
   String? _portName;
   bool _isResizing = false;
   bool _loadedSettings = false;
-  bool? _wasPortrait;
+  OrientationState _currentOrientation = OrientationState.unknown;
   StreamSubscription? _overlaySubscription;
-  StreamSubscription<AccelerometerEvent>? _accelerometerSub;
+  StreamSubscription? _orientationSub;
 
   Future<void> _fitWindowSize(
       {double width = defaultSize,
@@ -159,7 +167,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
   Future<void> _restoreOverlayPosition() async {
     if (!mounted) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     final double savedX = prefs.getDouble('overlayWinsPosX') ?? 0;
     final double savedY = prefs.getDouble('overlayWinsPosY') ?? 0;
@@ -179,7 +187,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
           );
           print('Overlay moved to ($savedX, $savedY)');
         }
-        break; 
+        break;
       }
       await Future.delayed(const Duration(milliseconds: 500));
     }
@@ -416,7 +424,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
     if (_portName != null) {
       try {
-        final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
+        final SendPort? sendPort =
+            IsolateNameServer.lookupPortByName(_portName!);
         sendPort?.send({'action': 'close_overlay'});
       } catch (e) {
         print('Error sending close message: $e');
@@ -435,7 +444,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
     final prefs = await SharedPreferences.getInstance();
     final double savedWidth = prefs.getDouble('overlayWidth') ?? defaultSize;
     final double savedHeight = prefs.getDouble('overlayHeight') ?? defaultSize;
-    final double savedCircleSize = prefs.getDouble('overlayCircleSize') ?? defaultSize;
+    final double savedCircleSize =
+        prefs.getDouble('overlayCircleSize') ?? defaultSize;
     final String? shapeStr = prefs.getString('overlayShape');
 
     if (!mounted) return;
@@ -451,6 +461,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
       }
       _loadedSettings = true;
     });
+
+    _restoreOverlayPosition();
   }
 
   @override
@@ -464,38 +476,129 @@ class _OverlayScreenState extends State<OverlayScreen> {
     }
     loadSavedSettings();
 
-    _accelerometerSub = accelerometerEventStream().listen((AccelerometerEvent event) {
-      // Determine orientation from gravity vector
-      // Typical portrait: Y is ~9.8, X is ~0
-      // Typical landscape: X is ~9.8 or ~-9.8, Y is ~0
-      final double x = event.x.abs();
-      final double y = event.y.abs();
-      if (x < 1.0 && y < 1.0) return; // Ignore very small forces (e.g., free fall)
+    try {
+      _orientationSub = accelerometerEventStream().listen((AccelerometerEvent event) {
+        final double x = event.x;
+        final double y = event.y;
+        
+        OrientationState orientation = _currentOrientation;
+        
+        // Simple orientation detection from accelerometer
+        if (y > 7.0) {
+          orientation = OrientationState.portraitUp;
+        } else if (y < -7.0) {
+          orientation = OrientationState.portraitDown;
+        } else if (x > 7.0) {
+          orientation = OrientationState.landscapeLeft;
+        } else if (x < -7.0) {
+          orientation = OrientationState.landscapeRight;
+        }
 
-      final bool isPortrait = y > x;
-
-      if (_wasPortrait != null && _wasPortrait != isPortrait) {
-        _transposeOverlayPosition();
-      }
-      _wasPortrait = isPortrait;
-    });
+        if (orientation != OrientationState.unknown) {
+          if (_currentOrientation == OrientationState.unknown) {
+            _currentOrientation = orientation;
+          }
+          if (_currentOrientation != orientation) {
+            _transposeOverlayPosition(_currentOrientation, orientation);
+            _currentOrientation = orientation;
+          }
+        }
+      });
+    } catch (e) {
+      print('Orientation listener error: $e');
+    }
   }
 
   @override
   void dispose() {
     _overlaySubscription?.cancel();
-    _accelerometerSub?.cancel();
+    _orientationSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _transposeOverlayPosition() async {
+  Future<void> _transposeOverlayPosition(
+    OrientationState before,
+    OrientationState after,
+  ) async {
+    print('Transposing overlay position from $before to $after');
+    if (before == OrientationState.unknown ||
+        after == OrientationState.unknown ||
+        before == after) {
+      return;
+    }
+    print('Will transpose overlay position from $before to $after');
+
     try {
       final position = await FlutterOverlayWindow.getOverlayPosition();
-      final newX = position.y;
-      final newY = position.x;
-      
+
+      // Get screen dimensions
+      final view = PlatformDispatcher.instance.implicitView;
+      if (view == null) return;
+
+      final double devicePixelRatio = view.devicePixelRatio;
+      final Size physicalSize = view.physicalSize;
+
+      // Current screen size (logical)
+      final double screenWidth = physicalSize.width / devicePixelRatio;
+      final double screenHeight = physicalSize.height / devicePixelRatio;
+
+      // Map orientations to angles (degrees)
+      double getAngle(OrientationState o) {
+        switch (o) {
+          case OrientationState.portraitUp:
+            return 0;
+          case OrientationState.landscapeRight:
+            return 90;
+          case OrientationState.portraitDown:
+            return 180;
+          case OrientationState.landscapeLeft:
+            return 270;
+          default:
+            return 0;
+        }
+      }
+
+      final double angleBefore = getAngle(before);
+      final double angleAfter = getAngle(after);
+      double deltaDegrees = angleAfter - angleBefore;
+
+      // Standardize to [-180, 180]
+      while (deltaDegrees <= -180) {
+        deltaDegrees += 360;
+      }
+      while (deltaDegrees > 180) {
+        deltaDegrees -= 360;
+      }
+
+      final double deltaRadians = deltaDegrees * pi / 180.0;
+
+      // Center of the screen BEFORE rotation
+      final double cx = screenWidth / 2.0;
+      final double cy = screenHeight / 2.0;
+
+      // Position relative to center
+      final double dx = position.x - cx;
+      final double dy = position.y - cy;
+
+      // Rotate the vector
+      final double cosPhi = cos(deltaRadians);
+      final double sinPhi = sin(deltaRadians);
+      final double rotatedDx = dx * cosPhi - dy * sinPhi;
+      final double rotatedDy = dx * sinPhi + dy * cosPhi;
+
+      // New center (swap dimensions if it's a 90/270 degree turn)
+      final bool is90Turn = (deltaDegrees.abs() % 180) != 0;
+      final double newCx = is90Turn ? cy : cx;
+      final double newCy = is90Turn ? cx : cy;
+
+      final double newX = newCx + rotatedDx;
+      final double newY = newCy + rotatedDy;
+
       await FlutterOverlayWindow.moveOverlay(OverlayPosition(newX, newY));
-      
+
+      print("Transposed from $before to $after. Delta: $deltaDegrees°. "
+          "Pos: (${position.x}, ${position.y}) -> ($newX, $newY)");
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('overlayWinsPosX', newX);
       await prefs.setDouble('overlayWinsPosY', newY);
