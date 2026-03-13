@@ -151,6 +151,38 @@ class _OverlayScreenState extends State<OverlayScreen> {
         _closeOverlay();
       }
     });
+
+    if (event['portName'] != null) {
+      _restoreOverlayPosition();
+    }
+  }
+
+  Future<void> _restoreOverlayPosition() async {
+    if (!mounted) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final double savedX = prefs.getDouble('overlayWinsPosX') ?? 0;
+    final double savedY = prefs.getDouble('overlayWinsPosY') ?? 0;
+
+    print('Restoring overlay position to ($savedX, $savedY)');
+
+    // Poll until the native window is completely active and ready.
+    for (int i = 0; i < 20; i++) {
+      if (!mounted) return;
+      final isWindowActive = await FlutterOverlayWindow.isActive();
+      if (isWindowActive) {
+        // Wait for OS layout to settle
+        await Future.delayed(const Duration(milliseconds: 600));
+        if (mounted) {
+          await FlutterOverlayWindow.moveOverlay(
+            OverlayPosition(savedX, savedY),
+          );
+          print('Overlay moved to ($savedX, $savedY)');
+        }
+        break; 
+      }
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   void _toggleControls() {
@@ -364,54 +396,61 @@ class _OverlayScreenState extends State<OverlayScreen> {
         tooltip: tooltip);
   }
 
-  void _closeOverlay() async {
-    OverlayPosition position = await FlutterOverlayWindow.getOverlayPosition();
+  Future<void> _closeOverlay() async {
+    print('Closing overlay and saving position...');
+    try {
+      final position = await FlutterOverlayWindow.getOverlayPosition();
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.setDouble('overlayWidth', _overlayWidth),
+        prefs.setDouble('overlayHeight', _overlayHeight),
+        prefs.setDouble('overlayCircleSize', _overlayCircleSize),
+        prefs.setString('overlayShape', _overlayShape.toString()),
+        prefs.setDouble('overlayWinsPosX', position.x),
+        prefs.setDouble('overlayWinsPosY', position.y),
+      ]);
+      print('Position saved: (${position.x}, ${position.y})');
+    } catch (e) {
+      print('Failed to save position on close: $e');
+    }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('overlayWidth', _overlayWidth);
-    await prefs.setDouble('overlayHeight', _overlayHeight);
-    await prefs.setDouble('overlayCircleSize', _overlayCircleSize);
-    await prefs.setString('overlayShape', _overlayShape.toString());
-    await prefs.setDouble('overlayWinsPosX', position.x);
-    await prefs.setDouble('overlayWinsPosY', position.y);
+    if (_portName != null) {
+      try {
+        final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
+        sendPort?.send({'action': 'close_overlay'});
+      } catch (e) {
+        print('Error sending close message: $e');
+      }
+    }
 
-    setState(() {
-      _loadedSettings = false;
-    });
-
-    final SendPort? sendPort = IsolateNameServer.lookupPortByName(_portName!);
-    sendPort?.send({'action': 'close_overlay'});
-    FlutterOverlayWindow.closeOverlay();
+    // Small delay to ensure preferences are flushed and message is sent
+    await Future.delayed(const Duration(milliseconds: 100));
+    await FlutterOverlayWindow.closeOverlay();
   }
 
   void loadSavedSettings() async {
-    final isWindowActive = await FlutterOverlayWindow.isActive();
-    if (isWindowActive && !_loadedSettings) {
-      final prefs = await SharedPreferences.getInstance();
-      _overlayWidth = prefs.getDouble('overlayWidth') ?? defaultSize;
-      _overlayHeight = prefs.getDouble('overlayHeight') ?? defaultSize;
-      _overlayCircleSize = prefs.getDouble('overlayCircleSize') ?? defaultSize;
-      String? shapeStr = prefs.getString('overlayShape');
+    if (_loadedSettings) return;
+
+    // 1. Load sizes and shape immediately so UI doesn't flicker
+    final prefs = await SharedPreferences.getInstance();
+    final double savedWidth = prefs.getDouble('overlayWidth') ?? defaultSize;
+    final double savedHeight = prefs.getDouble('overlayHeight') ?? defaultSize;
+    final double savedCircleSize = prefs.getDouble('overlayCircleSize') ?? defaultSize;
+    final String? shapeStr = prefs.getString('overlayShape');
+
+    if (!mounted) return;
+
+    setState(() {
+      _overlayWidth = savedWidth;
+      _overlayHeight = savedHeight;
+      _overlayCircleSize = savedCircleSize;
       if (shapeStr == 'OverlayShape.circle') {
         _overlayShape = OverlayShape.circle;
       } else {
         _overlayShape = OverlayShape.square;
       }
-
-      final overlayWinsPosX = prefs.getDouble('overlayWinsPosX') ?? 0;
-      final overlayWinsPosY = prefs.getDouble('overlayWinsPosY') ?? 0;
-
-      FlutterOverlayWindow.moveOverlay(
-        OverlayPosition(
-          overlayWinsPosX,
-          overlayWinsPosY,
-        ),
-      );
-
-      setState(() {
-        _loadedSettings = true;
-      });
-    }
+      _loadedSettings = true;
+    });
   }
 
   @override
@@ -423,6 +462,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
     } catch (e) {
       print('Caught listener error: $e');
     }
+    loadSavedSettings();
 
     _accelerometerSub = accelerometerEventStream().listen((AccelerometerEvent event) {
       // Determine orientation from gravity vector
@@ -466,8 +506,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    loadSavedSettings();
-
     final shapeWidth = _overlayWidth + resizeHandleSize * 2;
     final shapeHeight = _overlayHeight + resizeHandleSize * 2;
     final windowWidth = shapeWidth + panelWidth;

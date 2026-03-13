@@ -39,7 +39,7 @@ void main() {
           case 'moveOverlay':
             return true;
           case 'isOverlayActive':
-            return false;
+            return true;
           case 'resizeOverlay':
             return true;
           default:
@@ -61,6 +61,7 @@ void main() {
     // Changing orientation test logic
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
     
     log.clear();
 
@@ -92,7 +93,7 @@ void main() {
           case 'moveOverlay':
             return true;
           case 'isOverlayActive':
-            return false;
+            return true;
           case 'resizeOverlay':
             return true;
           default:
@@ -113,6 +114,7 @@ void main() {
 
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
     
     log.clear();
 
