@@ -8,6 +8,7 @@
 .history
 .idea/
 .svn/
+.DS_Store
 
 # Flutter repo-specific
 /bin/cache/

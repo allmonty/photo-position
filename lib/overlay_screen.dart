@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
@@ -5,6 +6,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 enum OverlayShape { circle, square }
 
@@ -40,6 +42,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
   String? _portName;
   bool _isResizing = false;
   bool _loadedSettings = false;
+  bool? _wasPortrait;
+  StreamSubscription? _overlaySubscription;
+  StreamSubscription<AccelerometerEvent>? _accelerometerSub;
 
   Future<void> _fitWindowSize(
       {double width = defaultSize,
@@ -412,7 +417,51 @@ class _OverlayScreenState extends State<OverlayScreen> {
   @override
   void initState() {
     super.initState();
-    FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+    try {
+      _overlaySubscription =
+          FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+    } catch (e) {
+      print('Caught listener error: $e');
+    }
+
+    _accelerometerSub = accelerometerEventStream().listen((AccelerometerEvent event) {
+      // Determine orientation from gravity vector
+      // Typical portrait: Y is ~9.8, X is ~0
+      // Typical landscape: X is ~9.8 or ~-9.8, Y is ~0
+      final double x = event.x.abs();
+      final double y = event.y.abs();
+      if (x < 1.0 && y < 1.0) return; // Ignore very small forces (e.g., free fall)
+
+      final bool isPortrait = y > x;
+
+      if (_wasPortrait != null && _wasPortrait != isPortrait) {
+        _transposeOverlayPosition();
+      }
+      _wasPortrait = isPortrait;
+    });
+  }
+
+  @override
+  void dispose() {
+    _overlaySubscription?.cancel();
+    _accelerometerSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _transposeOverlayPosition() async {
+    try {
+      final position = await FlutterOverlayWindow.getOverlayPosition();
+      final newX = position.y;
+      final newY = position.x;
+      
+      await FlutterOverlayWindow.moveOverlay(OverlayPosition(newX, newY));
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('overlayWinsPosX', newX);
+      await prefs.setDouble('overlayWinsPosY', newY);
+    } catch (e) {
+      print('Error in _transpose: $e');
+    }
   }
 
   @override
