@@ -423,7 +423,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                     child: SizedBox(
                       height: 4,
                       width: 24,
-                      child: Divider(color: Colors.white54, thickness: 2),
+                      child: Divider(color: kGold, thickness: 2),
                     ),
                   ),
                 ),
