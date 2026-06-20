@@ -50,7 +50,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isOverlayPermissionGranted = false;
   bool _isOverlayActive = false;
 
   final String _portName = "photo_position_overlay_port";
@@ -72,15 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showOverlay() async {
-    if (!_isOverlayPermissionGranted) {
-      final status = await FlutterOverlayWindow.isPermissionGranted();
-      setState(() {
-        _isOverlayPermissionGranted = status;
-      });
-      if (!status) {
-        await _requestOverlayPermission();
-        return;
-      }
+    final status = await FlutterOverlayWindow.isPermissionGranted();
+    if (!status) {
+      await _requestOverlayPermission();
+      return;
     }
 
     try {
