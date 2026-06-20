@@ -312,8 +312,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     final double savedX = prefs.getDouble('overlayWinsPosX') ?? 0;
     final double savedY = prefs.getDouble('overlayWinsPosY') ?? 0;
 
-    print('Restoring overlay position to ($savedX, $savedY)');
-
     // Poll until the native window is completely active and ready.
     for (int i = 0; i < 20; i++) {
       if (!mounted) return;
@@ -325,7 +323,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
           await FlutterOverlayWindow.moveOverlay(
             OverlayPosition(savedX, savedY),
           );
-          print('Overlay moved to ($savedX, $savedY)');
         }
         break;
       }
