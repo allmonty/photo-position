@@ -175,6 +175,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
   StreamSubscription? _overlaySubscription;
   StreamSubscription? _orientationSub;
 
+  // resizeOverlay's third argument is enableDrag, hence !isResizing: while a
+  // resize handle is being dragged, window-level drag must be disabled so
+  // it doesn't also move the whole window; it's re-enabled once the resize
+  // gesture ends.
   Future<void> _fitWindowSize(
       {double width = defaultSize,
       double height = defaultSize,
@@ -193,6 +197,11 @@ class _OverlayScreenState extends State<OverlayScreen> {
     }
   }
 
+  // Three independent drag handlers below: horizontal (square width),
+  // vertical (square height), and circle (uniform diagonal size). They only
+  // mutate in-memory state for live feedback while dragging; the result is
+  // persisted to shared_preferences when the overlay closes (_closeOverlay),
+  // not after each individual resize gesture.
   void _startHorizontalResize(DragStartDetails details) {
     _initialWidth = _overlayWidth;
     _dragStart = details.globalPosition;
@@ -233,7 +242,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       _isResizing = false;
     });
-    // _resizeBack();
   }
 
   void _startCircleResize(DragStartDetails details) {
@@ -259,16 +267,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
     });
   }
 
-  // void _clearPreferences() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.remove('overlayWidth');
-  //   await prefs.remove('overlayHeight');
-  //   await prefs.remove('overlayCircleSize');
-  //   await prefs.remove('overlayShape');
-  //   await prefs.remove('overlayWinsPosX');
-  //   await prefs.remove('overlayWinsPosY');
-  // }
-
+  // portName arrives once, right after the main app starts the overlay
+  // (see HomeScreen._showOverlay) -- it's used here as the signal that the
+  // cross-isolate connection is up, which is why restoring the saved
+  // position is gated on it rather than running unconditionally.
   void _handleOverlayMessage(dynamic event) {
     if (event is! Map) return;
     setState(() {
@@ -276,7 +278,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
         _portName = event['portName'];
       }
       if (event['action'] == "close_overlay_and_reset") {
-        // _clearPreferences();
         _closeOverlay();
       }
     });
@@ -324,6 +325,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
           ? OverlayShape.square
           : OverlayShape.circle;
       if (_overlayShape == OverlayShape.circle) {
+        // A square resized to a non-uniform width/height can't become a
+        // circle of the same footprint; use the smaller dimension so it
+        // fits within whatever area the square occupied.
         _overlayCircleSize = min(_overlayWidth, _overlayHeight);
       }
       _overlayWidth = _overlayCircleSize;
@@ -558,10 +562,14 @@ class _OverlayScreenState extends State<OverlayScreen> {
     await FlutterOverlayWindow.closeOverlay();
   }
 
+  // _loadedSettings guards against running this twice (e.g. a second
+  // initState during hot reload), which would otherwise re-trigger
+  // _restoreOverlayPosition and risk a duplicate/conflicting moveOverlay
+  // call while the first restore is still polling for the window to be
+  // active.
   void loadSavedSettings() async {
     if (_loadedSettings) return;
 
-    // 1. Load sizes and shape immediately so UI doesn't flicker
     final prefs = await SharedPreferences.getInstance();
     final double savedWidth = prefs.getDouble('overlayWidth') ?? defaultSize;
     final double savedHeight = prefs.getDouble('overlayHeight') ?? defaultSize;
@@ -604,7 +612,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
 
         OrientationState orientation = OrientationState.unknown;
 
-        // Simple orientation detection from accelerometer
+        // Classify orientation from which axis gravity is dominantly
+        // pulling on. The 7.0 m/s^2 threshold (gravity is ~9.8 m/s^2) means
+        // the device has to be held reasonably upright in that orientation,
+        // not just tilted slightly, before a reading counts.
         if (y > 7.0) {
           orientation = OrientationState.portraitUp;
         } else if (y < -7.0) {
@@ -658,6 +669,12 @@ class _OverlayScreenState extends State<OverlayScreen> {
     }
   }
 
+  // Guards _transposeOverlayPosition's read-then-write of the overlay
+  // position against overlapping calls: without _isTransposing, a second
+  // orientation change arriving while the first transpose is still
+  // in-flight could read a stale position and stomp on the first call's
+  // result. Anything that arrives while busy is picked up via
+  // _pendingOrientation once the current transpose finishes.
   Future<void> _applyOrientationChange(OrientationState target) async {
     if (_isTransposing) return;
     _isTransposing = true;
@@ -732,6 +749,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
     final windowWidth = shapeWidth + panelWidth;
     final windowHeight = max(shapeHeight, panelHeight);
 
+    // Called on every build (not just on resize end) so the native overlay
+    // window's actual size stays in sync with whatever the current
+    // shape/size state computes it to be -- e.g. right after a saved size
+    // is restored, before any resize gesture has happened.
     _fitWindowSize(
         width: windowWidth, height: windowHeight, isResizing: _isResizing);
 

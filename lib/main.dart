@@ -11,6 +11,10 @@ Future<void> main() async {
   runApp(const PhotoPositionApp());
 }
 
+// @pragma("vm:entry-point") is required so flutter_overlay_window's native
+// side can find and launch this function as the entry point for the
+// overlay's separate Flutter engine (it isn't reachable through the normal
+// main() widget tree).
 @pragma("vm:entry-point")
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,13 +93,17 @@ class _HomeScreenState extends State<HomeScreen> {
         overlayContent: "Use this overlay to position your camera",
         enableDrag: true,
       );
+      // showOverlay() returns once the native window/Service is requested,
+      // but the overlay's own Flutter engine starts up asynchronously and
+      // needs time to reach initState() and register its message listener
+      // (see OverlayScreen.initState/_handleOverlayMessage). shareData()
+      // sent before that listener attaches is simply lost, so wait for it.
       await Future.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
           "portName": _portName,
         },
       );
-      // Update state after a short delay to allow overlay to initialize
       if (mounted) {
         setState(() {
           _isOverlayActive = true;
@@ -115,6 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _closeOverlay() async {
     try {
+      // Ask the overlay to close itself rather than calling
+      // FlutterOverlayWindow.closeOverlay() directly: the overlay needs to
+      // save its current position/size to shared_preferences first (see
+      // OverlayScreen._closeOverlay), which only it has access to.
       await FlutterOverlayWindow.shareData({
         "action": "close_overlay_and_reset",
       });
@@ -141,13 +153,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _startBackgroundIsolate();
   }
 
+  // The overlay runs in its own Flutter engine and doesn't share Dart state
+  // with this one, so when the user closes it from the overlay's own UI
+  // (its close button), it has to tell this app via IsolateNameServer
+  // rather than just updating shared state -- this registers the port the
+  // overlay sends that notification to (see OverlayScreen._closeOverlay).
   void _startBackgroundIsolate() {
-    // Set up ReceivePort to get messages from overlay
-    // 1. Create a ReceivePort
     _receivePort = ReceivePort();
-    // 2. Register the SendPort with a name
     IsolateNameServer.registerPortWithName(_receivePort!.sendPort, _portName);
-    // 3. Listen for messages
     _receivePort!.listen((message) {
       setState(() {
         if (message is Map) {
