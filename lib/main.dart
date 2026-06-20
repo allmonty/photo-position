@@ -21,9 +21,10 @@ Future<void> main() async {
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    const MaterialApp(
+    MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: OverlayScreen(),
+      theme: artDecoTheme,
+      home: const OverlayScreen(),
     ),
   );
 }
