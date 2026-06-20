@@ -136,6 +136,13 @@ Offset? transposeWindowOffset({
   );
 }
 
+// Keys for widgets that tests need to find and drive directly (e.g.
+// simulating a drag on a resize handle); not used for any production logic.
+const Key overlayShapeContainerKey = ValueKey('overlayShapeContainer');
+const Key horizontalResizeHandleKey = ValueKey('horizontalResizeHandle');
+const Key verticalResizeHandleKey = ValueKey('verticalResizeHandle');
+const Key circleResizeHandleKey = ValueKey('circleResizeHandle');
+
 class OverlayScreen extends StatefulWidget {
   const OverlayScreen({super.key});
 
@@ -336,12 +343,14 @@ class _OverlayScreenState extends State<OverlayScreen> {
   }
 
   Widget _buildResizeHandle({
+    Key? key,
     required GestureDragStartCallback onStart,
     required GestureDragUpdateCallback onUpdate,
     required GestureDragEndCallback onEnd,
     required Widget child,
   }) {
     return GestureDetector(
+      key: key,
       behavior: HitTestBehavior.opaque,
       onVerticalDragStart: onStart,
       onVerticalDragUpdate: onUpdate,
@@ -351,12 +360,14 @@ class _OverlayScreenState extends State<OverlayScreen> {
   }
 
   Widget _buildHorizontalResizeHandle({
+    Key? key,
     required GestureDragStartCallback onStart,
     required GestureDragUpdateCallback onUpdate,
     required GestureDragEndCallback onEnd,
     required Widget child,
   }) {
     return GestureDetector(
+      key: key,
       behavior: HitTestBehavior.opaque,
       onHorizontalDragStart: onStart,
       onHorizontalDragUpdate: onUpdate,
@@ -379,6 +390,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                 behavior: HitTestBehavior.opaque,
                 onTap: _toggleControls,
                 child: Container(
+                  key: overlayShapeContainerKey,
                   width: _overlayCircleSize,
                   height: _overlayCircleSize,
                   decoration: BoxDecoration(
@@ -396,6 +408,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
               left: 0,
               right: 0,
               child: _buildResizeHandle(
+                key: circleResizeHandleKey,
                 child: const SizedBox(
                   height: resizeHandleSize,
                   child: Center(
@@ -428,6 +441,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
               behavior: HitTestBehavior.opaque,
               onTap: _toggleControls,
               child: Container(
+                key: overlayShapeContainerKey,
                 width: _overlayWidth,
                 height: _overlayHeight,
                 decoration: BoxDecoration(
@@ -445,6 +459,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
             top: 0,
             bottom: 0,
             child: _buildHorizontalResizeHandle(
+              key: horizontalResizeHandleKey,
               child: const SizedBox(
                 width: resizeHandleSize,
                 child: Center(
@@ -465,6 +480,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
             left: 0,
             right: 0,
             child: _buildResizeHandle(
+              key: verticalResizeHandleKey,
               child: const SizedBox(
                 height: resizeHandleSize,
                 child: Center(

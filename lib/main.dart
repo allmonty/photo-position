@@ -159,6 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // rather than just updating shared state -- this registers the port the
   // overlay sends that notification to (see OverlayScreen._closeOverlay).
   void _startBackgroundIsolate() {
+    // registerPortWithName silently fails -- leaving the previous mapping
+    // in place -- if this name is already registered. That would otherwise
+    // happen if this state is ever recreated (e.g. a hot reload re-running
+    // initState), permanently pointing the overlay's close notifications at
+    // a stale, already-disposed ReceivePort.
+    IsolateNameServer.removePortNameMapping(_portName);
     _receivePort = ReceivePort();
     IsolateNameServer.registerPortWithName(_receivePort!.sendPort, _portName);
     _receivePort!.listen((message) {
