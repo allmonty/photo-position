@@ -15,8 +15,8 @@ void main() {
     await tester.pumpWidget(const PhotoPositionApp());
 
     // Verify that the start overlay button is present
-    expect(find.text('Start Overlay'), findsOneWidget);
-    expect(find.text('Position Overlay App'), findsOneWidget);
+    expect(find.text('START OVERLAY'), findsOneWidget);
+    expect(find.text('PHOTO POSITION OVERLAY'), findsOneWidget);
   });
 
   testWidgets('App shows instructions', (WidgetTester tester) async {
@@ -24,7 +24,7 @@ void main() {
     await tester.pumpWidget(const PhotoPositionApp());
 
     // Verify that instructions are present
-    expect(find.text('Instructions:'), findsOneWidget);
-    expect(find.textContaining('Drag the circle/square'), findsOneWidget);
+    expect(find.text('INSTRUCTIONS'), findsOneWidget);
+    expect(find.textContaining('Drag the circle / square'), findsOneWidget);
   });
 }

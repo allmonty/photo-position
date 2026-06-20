@@ -40,7 +40,7 @@ void main() {
     );
 
     await tester.pumpWidget(const PhotoPositionApp());
-    await tester.tap(find.text('Start Overlay'));
+    await tester.tap(find.text('START OVERLAY'));
     await tester.pump();
     // Past the 500ms delay _showOverlay waits before sharing data.
     await tester.pump(const Duration(milliseconds: 600));
@@ -51,8 +51,8 @@ void main() {
       (sentMessages.last as Map)['portName'],
       'photo_position_overlay_port',
     );
-    expect(find.text('Stop Overlay'), findsOneWidget);
-    expect(find.text('Overlay is active!'), findsOneWidget);
+    expect(find.text('STOP OVERLAY'), findsOneWidget);
+    expect(find.text('OVERLAY ACTIVE'), findsOneWidget);
   });
 
   testWidgets(
@@ -70,14 +70,14 @@ void main() {
     });
 
     await tester.pumpWidget(const PhotoPositionApp());
-    await tester.tap(find.text('Start Overlay'));
+    await tester.tap(find.text('START OVERLAY'));
     await tester.pumpAndSettle();
 
     expect(log.where((c) => c.method == 'requestPermission'), hasLength(1));
     expect(log.where((c) => c.method == 'showOverlay'), isEmpty,
         reason: 'Must not show the overlay in the same tap that requested '
             'permission -- the user has to tap Start Overlay again');
-    expect(find.text('Start Overlay'), findsOneWidget);
+    expect(find.text('START OVERLAY'), findsOneWidget);
   });
 
   testWidgets(
@@ -98,18 +98,18 @@ void main() {
     );
 
     await tester.pumpWidget(const PhotoPositionApp());
-    await tester.tap(find.text('Start Overlay'));
+    await tester.tap(find.text('START OVERLAY'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Stop Overlay'), findsOneWidget);
+    expect(find.text('STOP OVERLAY'), findsOneWidget);
 
     sentMessages.clear();
-    await tester.tap(find.text('Stop Overlay'));
+    await tester.tap(find.text('STOP OVERLAY'));
     await tester.pumpAndSettle();
 
     expect(sentMessages, isNotEmpty);
     expect((sentMessages.last as Map)['action'], 'close_overlay_and_reset');
-    expect(find.text('Start Overlay'), findsOneWidget);
+    expect(find.text('START OVERLAY'), findsOneWidget);
   });
 
   testWidgets(
@@ -124,10 +124,10 @@ void main() {
     });
 
     await tester.pumpWidget(const PhotoPositionApp());
-    await tester.tap(find.text('Start Overlay'));
+    await tester.tap(find.text('START OVERLAY'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('Stop Overlay'), findsOneWidget);
+    expect(find.text('STOP OVERLAY'), findsOneWidget);
 
     final SendPort? overlayPort =
         IsolateNameServer.lookupPortByName('photo_position_overlay_port');
@@ -142,6 +142,6 @@ void main() {
     });
     await tester.pump();
 
-    expect(find.text('Start Overlay'), findsOneWidget);
+    expect(find.text('START OVERLAY'), findsOneWidget);
   });
 }
