@@ -3,8 +3,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:photo_position/overlay_screen.dart';
+import 'package:photo_position/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,13 +35,7 @@ class PhotoPositionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Photo Position Overlay',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: Colors.purple,
-        ),
-        useMaterial3: true,
-      ),
+      theme: artDecoTheme(),
       home: const HomeScreen(),
     );
   }
@@ -182,8 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Photo Position Overlay'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('PHOTO POSITION'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -192,92 +187,198 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.crop_square,
-                  size: 100,
-                  color: Colors.red,
+                Image.asset(
+                  'assets/icon/icon.png',
+                  width: 120,
+                  height: 120,
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Position Overlay App',
-                  style: TextStyle(
+                Text(
+                  'PHOTO POSITION OVERLAY',
+                  style: GoogleFonts.poiretOne(
                     fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 28 * 0.05,
+                    color: kGold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Create a positioning overlay that stays on top of other apps',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.libreFranklin(
+                    fontSize: 14,
+                    color: kOnSurface,
+                  ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+                const _ArtDecoDivider(),
+                const SizedBox(height: 32),
                 if (!_isOverlayActive)
-                  ElevatedButton.icon(
+                  _ArtDecoButton(
+                    icon: Icons.play_arrow,
+                    label: 'START OVERLAY',
                     onPressed: _showOverlay,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start Overlay'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                      textStyle: const TextStyle(fontSize: 18),
-                    ),
+                    filled: true,
                   )
                 else
                   Column(
                     children: [
-                      const Text(
-                        'Overlay is active!',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                      Text(
+                        'OVERLAY ACTIVE',
+                        style: GoogleFonts.poiretOne(
+                          fontSize: 16,
+                          letterSpacing: 16 * 0.1,
+                          color: kGold,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ElevatedButton.icon(
+                      _ArtDecoButton(
+                        icon: Icons.stop,
+                        label: 'STOP OVERLAY',
                         onPressed: _closeOverlay,
-                        icon: const Icon(Icons.stop),
-                        label: const Text('Stop Overlay'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          textStyle: const TextStyle(fontSize: 18),
-                        ),
+                        filled: false,
                       ),
                     ],
                   ),
                 const SizedBox(height: 32),
-                const Divider(),
-                const SizedBox(height: 16),
-                const Text(
-                  'Instructions:',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const _ArtDecoDivider(),
+                const SizedBox(height: 24),
+                Text(
+                  'INSTRUCTIONS',
+                  style: GoogleFonts.poiretOne(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 14 * 0.1,
+                    color: kGold,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  '1. Tap "Start Overlay" to create the overlay\n'
-                  '2. Drag the circle/square to position it\n'
-                  '3. Use controls to change shape and size\n'
-                  '4. Open your camera app to use the overlay\n'
-                  '5. Tap the overlay to toggle controls visibility\n'
-                  '6. Close overlay from controls or this app',
-                  style: TextStyle(fontSize: 14),
-                ),
+                const _InstructionsList(),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ArtDecoDivider extends StatelessWidget {
+  const _ArtDecoDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider(color: kGold, thickness: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Transform.rotate(
+            angle: 0.7854, // 45 degrees — diamond motif
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                border: Border.all(color: kGold, width: 1.5),
+              ),
+            ),
+          ),
+        ),
+        const Expanded(child: Divider(color: kGold, thickness: 1)),
+      ],
+    );
+  }
+}
+
+class _ArtDecoButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  // true = cream fill (primary action), false = outlined (secondary action)
+  final bool filled;
+
+  const _ArtDecoButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    required this.filled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fgColor = filled ? kCrimson : kGold;
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, color: fgColor),
+      label: Text(
+        label,
+        style: GoogleFonts.poiretOne(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 16 * 0.05,
+          color: fgColor,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: filled ? kCream : kCrimsonMid,
+        foregroundColor: fgColor,
+        side: BorderSide(color: kGold, width: filled ? 2 : 1),
+        shape: const BeveledRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      ),
+    );
+  }
+}
+
+class _InstructionsList extends StatelessWidget {
+  const _InstructionsList();
+
+  static const _steps = [
+    'Tap "Start Overlay" to create the overlay',
+    'Drag the circle / square to position it',
+    'Use controls to change shape and size',
+    'Open your camera app to use the overlay',
+    'Tap the overlay to toggle controls visibility',
+    'Close overlay from controls or this app',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < _steps.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${i + 1}.',
+                  style: GoogleFonts.poiretOne(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: kGold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _steps[i],
+                    style: GoogleFonts.libreFranklin(
+                      fontSize: 14,
+                      color: kOnSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
