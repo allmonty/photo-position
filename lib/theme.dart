@@ -38,8 +38,7 @@ const artDecoColorScheme = ColorScheme(
   surfaceTint: Color(0xFFFFB4AA),
 );
 
-ThemeData artDecoTheme() {
-  return ThemeData(
+final ThemeData artDecoTheme = ThemeData(
     colorScheme: artDecoColorScheme,
     useMaterial3: true,
     scaffoldBackgroundColor: kCrimson,
@@ -67,4 +66,3 @@ ThemeData artDecoTheme() {
       ),
     ),
   );
-}

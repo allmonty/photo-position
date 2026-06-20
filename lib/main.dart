@@ -35,7 +35,7 @@ class PhotoPositionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Photo Position Overlay',
-      theme: artDecoTheme(),
+      theme: artDecoTheme,
       home: const HomeScreen(),
     );
   }
