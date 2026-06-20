@@ -324,10 +324,14 @@ class _OverlayScreenState extends State<OverlayScreen> {
             OverlayPosition(savedX, savedY),
           );
         }
-        break;
+        return;
       }
       await Future.delayed(const Duration(milliseconds: 500));
     }
+    // All 20 polls exhausted without the window becoming active; clear the
+    // flag so a later trigger (e.g. a delayed portName message) can retry
+    // rather than being permanently blocked.
+    _restoredPosition = false;
   }
 
   void _toggleControls() {
