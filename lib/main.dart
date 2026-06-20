@@ -90,25 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
         enableDrag: true,
       );
       await Future.delayed(const Duration(milliseconds: 500));
-      if (!mounted) return;
-
-      // The overlay window is sized to fit only its own content (the shape
-      // + control panel), not the full device screen, so it can't reliably
-      // read the real screen size from inside its own Flutter engine. This
-      // app's window *is* the full screen, so capture the real size here
-      // and hand it to the overlay once, up front -- it's a fixed property
-      // of the device and won't change across rotations.
-      final Size screenSize = MediaQuery.of(context).size;
-      final double screenLongSide =
-          screenSize.width > screenSize.height ? screenSize.width : screenSize.height;
-      final double screenShortSide =
-          screenSize.width > screenSize.height ? screenSize.height : screenSize.width;
-
       await FlutterOverlayWindow.shareData(
         {
           "portName": _portName,
-          "screenLongSide": screenLongSide,
-          "screenShortSide": screenShortSide,
         },
       );
       // Update state after a short delay to allow overlay to initialize

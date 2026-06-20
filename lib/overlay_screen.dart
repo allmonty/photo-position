@@ -18,9 +18,6 @@ enum OrientationState {
   unknown
 }
 
-bool isLandscapeOrientation(OrientationState o) =>
-    o == OrientationState.landscapeLeft || o == OrientationState.landscapeRight;
-
 /// Degrees clockwise from portraitUp, used to compute the rotation angle
 /// between two orientations.
 double _orientationAngleDegrees(OrientationState o) {
@@ -169,11 +166,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
   double _initialSize = defaultSize;
 
   String? _portName;
-  // The device's two physical screen dimensions (logical pixels), shared by
-  // the main app once at overlay startup -- see _handleOverlayMessage. These
-  // don't change with rotation, only which one is currently "width" is.
-  double? _screenLongSide;
-  double? _screenShortSide;
   bool _isResizing = false;
   bool _loadedSettings = false;
   OrientationState _currentOrientation = OrientationState.unknown;
@@ -182,13 +174,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
   bool _isTransposing = false;
   StreamSubscription? _overlaySubscription;
   StreamSubscription? _orientationSub;
-
-  // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
-  // Shows the shape's computed absolute position (top-left-based, logical
-  // pixels) relative to the real physical screen, so it can be read off a
-  // real device in both orientations.
-  Offset? _debugAbsolutePosition;
-  Timer? _debugPositionTimer;
 
   Future<void> _fitWindowSize(
       {double width = defaultSize,
@@ -289,10 +274,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       if (event['portName'] != null) {
         _portName = event['portName'];
-      }
-      if (event['screenLongSide'] != null && event['screenShortSide'] != null) {
-        _screenLongSide = (event['screenLongSide'] as num).toDouble();
-        _screenShortSide = (event['screenShortSide'] as num).toDouble();
       }
       if (event['action'] == "close_overlay_and_reset") {
         // _clearPreferences();
@@ -675,50 +656,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     } catch (e) {
       print('Orientation listener error: $e');
     }
-
-    // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
-    _debugPositionTimer = Timer.periodic(
-        const Duration(milliseconds: 500), (_) => _updateDebugAbsolutePosition());
-  }
-
-  // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
-  // Computes the shape's absolute position relative to the real physical
-  // screen's top-left corner, in logical pixels, for display purposes only
-  // -- the actual rotation transform (_transposeOverlayPosition) no longer
-  // needs the screen size at all (see transposeOverlayOffset), but turning
-  // the window/content-relative offset into an absolute on-screen position
-  // for this label still does.
-  Future<void> _updateDebugAbsolutePosition() async {
-    if (!mounted) return;
-    final double? longSide = _screenLongSide;
-    final double? shortSide = _screenShortSide;
-    if (longSide == null || shortSide == null) return;
-    if (_currentOrientation == OrientationState.unknown) return;
-
-    try {
-      final position = await FlutterOverlayWindow.getOverlayPosition();
-      final Offset contentOffset = overlayContentCenterOffset(
-        shapeWidth: _overlayWidth + resizeHandleSize * 2,
-        shapeHeight: _overlayHeight + resizeHandleSize * 2,
-        panelWidth: panelWidth,
-        panelHeight: panelHeight,
-      );
-
-      final bool landscape = isLandscapeOrientation(_currentOrientation);
-      final double screenWidth = landscape ? longSide : shortSide;
-      final double screenHeight = landscape ? shortSide : longSide;
-
-      final double absoluteX = screenWidth / 2 + position.x + contentOffset.dx;
-      final double absoluteY = screenHeight / 2 + position.y + contentOffset.dy;
-
-      if (mounted) {
-        setState(() {
-          _debugAbsolutePosition = Offset(absoluteX, absoluteY);
-        });
-      }
-    } catch (e) {
-      print('Error updating debug position: $e');
-    }
   }
 
   Future<void> _applyOrientationChange(OrientationState target) async {
@@ -743,7 +680,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
     _overlaySubscription?.cancel();
     _orientationSub?.cancel();
     _orientationDebounce?.cancel();
-    _debugPositionTimer?.cancel(); // DEBUG ONLY
     super.dispose();
   }
 
@@ -808,33 +744,6 @@ class _OverlayScreenState extends State<OverlayScreen> {
           children: [
             _buildOverlayContent(),
             if (_showControls) _buildControlsPanel(windowHeight),
-            // DEBUG ONLY -- remove once rotation positioning is confirmed
-            // correct. Shows the shape's absolute position relative to the
-            // real physical screen's top-left corner, centered over the
-            // shape itself so it's visible regardless of where the control
-            // panel/handles are.
-            if (_debugAbsolutePosition != null)
-              Positioned(
-                left: 0,
-                top: 0,
-                width: shapeWidth,
-                height: shapeHeight,
-                child: IgnorePointer(
-                  child: Center(
-                    child: Container(
-                      color: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 2),
-                      child: Text(
-                        'X:${_debugAbsolutePosition!.dx.round()} '
-                        'Y:${_debugAbsolutePosition!.dy.round()}',
-                        style: const TextStyle(
-                            color: Colors.yellow, fontSize: 11),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),

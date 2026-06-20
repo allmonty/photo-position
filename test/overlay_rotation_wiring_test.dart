@@ -1,69 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_position/main.dart';
 import 'package:photo_position/overlay_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // The overlay is meant to stay glued to the physical device (like a sticker
 // on the glass), so rotating it is a pure rotation of its offset from the
 // screen center -- it doesn't need to know the screen's actual dimensions
-// at all (see transposeOverlayOffset). The real screen size is still shared
-// with the overlay once at startup (below), but only for the in-app debug
-// label's "absolute position" display, not for correctness of the rotation
-// itself -- which the second test here confirms by never sending it.
+// at all (see transposeOverlayOffset). This test drives the full
+// accelerometer -> debounce -> transpose -> moveOverlay pipeline through
+// OverlayScreen's public widget surface, rather than calling the pure
+// functions directly, to catch wiring regressions the unit tests can't.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Starting the overlay shares the real device screen size',
-      (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 3.0;
-    addTearDown(tester.view.reset);
-
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      const MethodChannel('x-slayer/overlay_channel'),
-      (MethodCall call) async {
-        switch (call.method) {
-          case 'checkPermission':
-            return true;
-          case 'showOverlay':
-            return true;
-          case 'isOverlayActive':
-            return true;
-          default:
-            return null;
-        }
-      },
-    );
-
-    final sentMessages = <dynamic>[];
-    tester.binding.defaultBinaryMessenger.setMockMessageHandler(
-      'x-slayer/overlay_messenger',
-      (ByteData? message) async {
-        sentMessages.add(const JSONMessageCodec().decodeMessage(message));
-        return const JSONMessageCodec().encodeMessage(null);
-      },
-    );
-
-    await tester.pumpWidget(const PhotoPositionApp());
-    await tester.tap(find.text('Start Overlay'));
-    await tester.pump();
-    // Past the 500ms delay _showOverlay waits before sharing data.
-    await tester.pump(const Duration(milliseconds: 600));
-
-    expect(sentMessages, isNotEmpty,
-        reason: 'Starting the overlay should share data with it');
-    final Map<dynamic, dynamic> payload =
-        sentMessages.last as Map<dynamic, dynamic>;
-    // Logical size = 1080x2400 physical / 3.0 devicePixelRatio = 360x800.
-    expect(payload['screenLongSide'], 800.0);
-    expect(payload['screenShortSide'], 360.0);
-  });
-
-  testWidgets(
-      'Overlay rotates correctly even without ever receiving the shared '
-      'screen size',
+  testWidgets('Rotating the device transposes the overlay position',
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
 
@@ -105,8 +56,6 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: OverlayScreen()));
     await tester.pumpAndSettle();
 
-    // Deliberately do NOT send a screenLongSide/screenShortSide message --
-    // rotation correctness must not depend on it.
     expect(accelerometerSink, isNotNull,
         reason: 'OverlayScreen should subscribe to the accelerometer stream');
     overlayChannelLog.clear();
