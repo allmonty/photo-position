@@ -175,6 +175,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
   String? _portName;
   bool _isResizing = false;
   bool _loadedSettings = false;
+  bool _restoredPosition = false;
   OrientationState _currentOrientation = OrientationState.unknown;
   OrientationState? _pendingOrientation;
   Timer? _orientationDebounce;
@@ -295,7 +296,15 @@ class _OverlayScreenState extends State<OverlayScreen> {
   }
 
   Future<void> _restoreOverlayPosition() async {
-    if (!mounted) return;
+    // Both loadSavedSettings() and _handleOverlayMessage() call this -- the
+    // latter fires when portName arrives, which in production happens while
+    // the former's restore (triggered from initState) is typically still
+    // polling. Without this guard both would race to read prefs and call
+    // moveOverlay(), and if an orientation change writes new prefs in
+    // between, the second call can snap the overlay back to a stale
+    // pre-rotation position.
+    if (!mounted || _restoredPosition) return;
+    _restoredPosition = true;
 
     final prefs = await SharedPreferences.getInstance();
     final double savedX = prefs.getDouble('overlayWinsPosX') ?? 0;
