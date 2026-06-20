@@ -18,6 +18,127 @@ enum OrientationState {
   unknown
 }
 
+bool isLandscapeOrientation(OrientationState o) =>
+    o == OrientationState.landscapeLeft || o == OrientationState.landscapeRight;
+
+/// Degrees clockwise from portraitUp, used to compute the rotation angle
+/// between two orientations.
+double _orientationAngleDegrees(OrientationState o) {
+  switch (o) {
+    case OrientationState.portraitUp:
+      return 0;
+    case OrientationState.landscapeRight:
+      return 90;
+    case OrientationState.portraitDown:
+      return 180;
+    case OrientationState.landscapeLeft:
+      return 270;
+    case OrientationState.unknown:
+      return 0;
+  }
+}
+
+/// Computes the overlay's new center-relative offset after the screen
+/// rotates from [before] to [after]. The overlay is meant to stay glued to
+/// the physical device, like a sticker on the glass, so this rotates the
+/// offset vector by the angle between the two orientations -- it does NOT
+/// try to preserve the offset's position relative to the screen's own
+/// (logical, upright) corners, which is a different point once the device
+/// has physically turned.
+///
+/// [offsetX]/[offsetY] is the overlay's current offset from the screen
+/// center (this is what `FlutterOverlayWindow.getOverlayPosition()` returns,
+/// since the overlay window uses `Gravity.CENTER`).
+///
+/// Returns `null` when no repositioning is needed: an unknown or unchanged
+/// orientation.
+Offset? transposeOverlayOffset({
+  required OrientationState before,
+  required OrientationState after,
+  required double offsetX,
+  required double offsetY,
+}) {
+  if (before == OrientationState.unknown ||
+      after == OrientationState.unknown ||
+      before == after) {
+    return null;
+  }
+
+  double deltaDegrees =
+      _orientationAngleDegrees(after) - _orientationAngleDegrees(before);
+  while (deltaDegrees <= -180) {
+    deltaDegrees += 360;
+  }
+  while (deltaDegrees > 180) {
+    deltaDegrees -= 360;
+  }
+
+  final double radians = deltaDegrees * pi / 180.0;
+  final double cosA = cos(radians);
+  final double sinA = sin(radians);
+
+  // OverlayPosition.toMap() truncates toward zero (x.toInt()), which biases
+  // negative offsets. Round here so we control the rounding ourselves and
+  // avoid that truncation drift on every rotation.
+  return Offset(
+    (offsetX * cosA - offsetY * sinA).roundToDouble(),
+    (offsetX * sinA + offsetY * cosA).roundToDouble(),
+  );
+}
+
+/// The overlay window is anchored, via `Gravity.CENTER`, at its own
+/// geometric center -- but the shape (square/circle) the user actually
+/// sees and drags is not centered within that window, because the window
+/// also reserves space for the control panel to its right (see build() /
+/// _buildOverlayContent()). This returns the shape's true visual center
+/// relative to the window's own center.
+///
+/// `transposeOverlayOffset` scales an offset *from the screen center*.
+/// `getOverlayPosition()`/`moveOverlay()` only deal in the window's offset,
+/// not the shape's true offset, so scaling the window's offset directly
+/// is off by this constant amount -- it has to be added in before scaling
+/// and subtracted back out after.
+Offset overlayContentCenterOffset({
+  required double shapeWidth,
+  required double shapeHeight,
+  required double panelWidth,
+  required double panelHeight,
+}) {
+  final double windowWidth = shapeWidth + panelWidth;
+  final double windowHeight = shapeHeight > panelHeight ? shapeHeight : panelHeight;
+  return Offset(
+    shapeWidth / 2 - windowWidth / 2,
+    shapeHeight / 2 - windowHeight / 2,
+  );
+}
+
+/// Composes [transposeOverlayOffset] with the window/content correction
+/// from [overlayContentCenterOffset]: [windowOffset] (what
+/// `getOverlayPosition()`/`moveOverlay()` deal in) and the shape's true
+/// visual offset are not the same point, so [contentOffset] has to be
+/// added in before scaling and subtracted back out after.
+///
+/// Returns `null` when no repositioning is needed -- see
+/// [transposeOverlayOffset].
+Offset? transposeWindowOffset({
+  required Offset windowOffset,
+  required Offset contentOffset,
+  required OrientationState before,
+  required OrientationState after,
+}) {
+  final Offset? rotatedTrueOffset = transposeOverlayOffset(
+    before: before,
+    after: after,
+    offsetX: windowOffset.dx + contentOffset.dx,
+    offsetY: windowOffset.dy + contentOffset.dy,
+  );
+  if (rotatedTrueOffset == null) return null;
+  return Offset(
+    (rotatedTrueOffset.dx - contentOffset.dx).roundToDouble(),
+    (rotatedTrueOffset.dy - contentOffset.dy).roundToDouble(),
+  );
+}
+
 class OverlayScreen extends StatefulWidget {
   const OverlayScreen({super.key});
 
@@ -48,11 +169,26 @@ class _OverlayScreenState extends State<OverlayScreen> {
   double _initialSize = defaultSize;
 
   String? _portName;
+  // The device's two physical screen dimensions (logical pixels), shared by
+  // the main app once at overlay startup -- see _handleOverlayMessage. These
+  // don't change with rotation, only which one is currently "width" is.
+  double? _screenLongSide;
+  double? _screenShortSide;
   bool _isResizing = false;
   bool _loadedSettings = false;
   OrientationState _currentOrientation = OrientationState.unknown;
+  OrientationState? _pendingOrientation;
+  Timer? _orientationDebounce;
+  bool _isTransposing = false;
   StreamSubscription? _overlaySubscription;
   StreamSubscription? _orientationSub;
+
+  // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
+  // Shows the shape's computed absolute position (top-left-based, logical
+  // pixels) relative to the real physical screen, so it can be read off a
+  // real device in both orientations.
+  Offset? _debugAbsolutePosition;
+  Timer? _debugPositionTimer;
 
   Future<void> _fitWindowSize(
       {double width = defaultSize,
@@ -153,6 +289,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
     setState(() {
       if (event['portName'] != null) {
         _portName = event['portName'];
+      }
+      if (event['screenLongSide'] != null && event['screenShortSide'] != null) {
+        _screenLongSide = (event['screenLongSide'] as num).toDouble();
+        _screenShortSide = (event['screenShortSide'] as num).toDouble();
       }
       if (event['action'] == "close_overlay_and_reset") {
         // _clearPreferences();
@@ -480,9 +620,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
       _orientationSub = accelerometerEventStream().listen((AccelerometerEvent event) {
         final double x = event.x;
         final double y = event.y;
-        
-        OrientationState orientation = _currentOrientation;
-        
+
+        OrientationState orientation = OrientationState.unknown;
+
         // Simple orientation detection from accelerometer
         if (y > 7.0) {
           orientation = OrientationState.portraitUp;
@@ -494,18 +634,107 @@ class _OverlayScreenState extends State<OverlayScreen> {
           orientation = OrientationState.landscapeRight;
         }
 
-        if (orientation != OrientationState.unknown) {
-          if (_currentOrientation == OrientationState.unknown) {
-            _currentOrientation = orientation;
-          }
-          if (_currentOrientation != orientation) {
-            _transposeOverlayPosition(_currentOrientation, orientation);
-            _currentOrientation = orientation;
-          }
+        if (orientation == OrientationState.unknown) return;
+
+        if (_currentOrientation == OrientationState.unknown) {
+          // First reading: adopt it directly, nothing to transpose yet.
+          _currentOrientation = orientation;
+          _pendingOrientation = null;
+          _orientationDebounce?.cancel();
+          return;
         }
+
+        if (orientation == _currentOrientation) {
+          // Sensor settled back to the already-applied orientation;
+          // cancel any pending (now stale) transpose.
+          _pendingOrientation = null;
+          _orientationDebounce?.cancel();
+          return;
+        }
+
+        // Debounce: rotation gestures fire many transient accelerometer
+        // readings while the phone is turning (and the emulator's rotate
+        // animation does the same). Only act once the reported orientation
+        // has held steady for a short period, and never let two transpose
+        // calls race each other reading/writing the overlay position.
+        //
+        // Only (re)start the timer when the candidate target actually
+        // changes -- the accelerometer keeps emitting matching readings
+        // long after the phone has settled, and restarting the timer on
+        // every one of those would mean it never fires.
+        if (_pendingOrientation == orientation) return;
+        _pendingOrientation = orientation;
+        _orientationDebounce?.cancel();
+        _orientationDebounce =
+            Timer(const Duration(milliseconds: 250), () {
+          final target = _pendingOrientation;
+          if (target == null || target == _currentOrientation) return;
+          _applyOrientationChange(target);
+        });
       });
     } catch (e) {
       print('Orientation listener error: $e');
+    }
+
+    // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
+    _debugPositionTimer = Timer.periodic(
+        const Duration(milliseconds: 500), (_) => _updateDebugAbsolutePosition());
+  }
+
+  // DEBUG ONLY -- remove once rotation positioning is confirmed correct.
+  // Computes the shape's absolute position relative to the real physical
+  // screen's top-left corner, in logical pixels, for display purposes only
+  // -- the actual rotation transform (_transposeOverlayPosition) no longer
+  // needs the screen size at all (see transposeOverlayOffset), but turning
+  // the window/content-relative offset into an absolute on-screen position
+  // for this label still does.
+  Future<void> _updateDebugAbsolutePosition() async {
+    if (!mounted) return;
+    final double? longSide = _screenLongSide;
+    final double? shortSide = _screenShortSide;
+    if (longSide == null || shortSide == null) return;
+    if (_currentOrientation == OrientationState.unknown) return;
+
+    try {
+      final position = await FlutterOverlayWindow.getOverlayPosition();
+      final Offset contentOffset = overlayContentCenterOffset(
+        shapeWidth: _overlayWidth + resizeHandleSize * 2,
+        shapeHeight: _overlayHeight + resizeHandleSize * 2,
+        panelWidth: panelWidth,
+        panelHeight: panelHeight,
+      );
+
+      final bool landscape = isLandscapeOrientation(_currentOrientation);
+      final double screenWidth = landscape ? longSide : shortSide;
+      final double screenHeight = landscape ? shortSide : longSide;
+
+      final double absoluteX = screenWidth / 2 + position.x + contentOffset.dx;
+      final double absoluteY = screenHeight / 2 + position.y + contentOffset.dy;
+
+      if (mounted) {
+        setState(() {
+          _debugAbsolutePosition = Offset(absoluteX, absoluteY);
+        });
+      }
+    } catch (e) {
+      print('Error updating debug position: $e');
+    }
+  }
+
+  Future<void> _applyOrientationChange(OrientationState target) async {
+    if (_isTransposing) return;
+    _isTransposing = true;
+    try {
+      final OrientationState before = _currentOrientation;
+      await _transposeOverlayPosition(before, target);
+      _currentOrientation = target;
+    } finally {
+      _isTransposing = false;
+    }
+    // If another orientation arrived while we were transposing, apply it now.
+    final OrientationState? next = _pendingOrientation;
+    if (next != null && next != _currentOrientation) {
+      await _applyOrientationChange(next);
     }
   }
 
@@ -513,6 +742,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void dispose() {
     _overlaySubscription?.cancel();
     _orientationSub?.cancel();
+    _orientationDebounce?.cancel();
+    _debugPositionTimer?.cancel(); // DEBUG ONLY
     super.dispose();
   }
 
@@ -520,88 +751,39 @@ class _OverlayScreenState extends State<OverlayScreen> {
     OrientationState before,
     OrientationState after,
   ) async {
-    print('Transposing overlay position from $before to $after');
-    if (before == OrientationState.unknown ||
-        after == OrientationState.unknown ||
-        before == after) {
-      return;
-    }
-    print('Will transpose overlay position from $before to $after');
-
     try {
       final position = await FlutterOverlayWindow.getOverlayPosition();
 
-      // Get screen dimensions
-      final view = PlatformDispatcher.instance.implicitView;
-      if (view == null) return;
+      // getOverlayPosition()/moveOverlay() only deal in the window's
+      // gravity-center offset, not the shape's true visual offset -- those
+      // two differ by a constant amount because the window also reserves
+      // space for the control panel. transposeWindowOffset corrects for
+      // that (see overlayContentCenterOffset).
+      final Offset contentOffset = overlayContentCenterOffset(
+        shapeWidth: _overlayWidth + resizeHandleSize * 2,
+        shapeHeight: _overlayHeight + resizeHandleSize * 2,
+        panelWidth: panelWidth,
+        panelHeight: panelHeight,
+      );
 
-      final double devicePixelRatio = view.devicePixelRatio;
-      final Size physicalSize = view.physicalSize;
+      final Offset? newOffset = transposeWindowOffset(
+        windowOffset: Offset(position.x, position.y),
+        contentOffset: contentOffset,
+        before: before,
+        after: after,
+      );
+      if (newOffset == null) return;
 
-      // Current screen size (logical)
-      final double screenWidth = physicalSize.width / devicePixelRatio;
-      final double screenHeight = physicalSize.height / devicePixelRatio;
+      await FlutterOverlayWindow.moveOverlay(
+          OverlayPosition(newOffset.dx, newOffset.dy));
 
-      // Map orientations to angles (degrees)
-      double getAngle(OrientationState o) {
-        switch (o) {
-          case OrientationState.portraitUp:
-            return 0;
-          case OrientationState.landscapeRight:
-            return 90;
-          case OrientationState.portraitDown:
-            return 180;
-          case OrientationState.landscapeLeft:
-            return 270;
-          default:
-            return 0;
-        }
-      }
-
-      final double angleBefore = getAngle(before);
-      final double angleAfter = getAngle(after);
-      double deltaDegrees = angleAfter - angleBefore;
-
-      // Standardize to [-180, 180]
-      while (deltaDegrees <= -180) {
-        deltaDegrees += 360;
-      }
-      while (deltaDegrees > 180) {
-        deltaDegrees -= 360;
-      }
-
-      final double deltaRadians = deltaDegrees * pi / 180.0;
-
-      // Center of the screen BEFORE rotation
-      final double cx = screenWidth / 2.0;
-      final double cy = screenHeight / 2.0;
-
-      // Position relative to center
-      final double dx = position.x - cx;
-      final double dy = position.y - cy;
-
-      // Rotate the vector
-      final double cosPhi = cos(deltaRadians);
-      final double sinPhi = sin(deltaRadians);
-      final double rotatedDx = dx * cosPhi - dy * sinPhi;
-      final double rotatedDy = dx * sinPhi + dy * cosPhi;
-
-      // New center (swap dimensions if it's a 90/270 degree turn)
-      final bool is90Turn = (deltaDegrees.abs() % 180) != 0;
-      final double newCx = is90Turn ? cy : cx;
-      final double newCy = is90Turn ? cx : cy;
-
-      final double newX = newCx + rotatedDx;
-      final double newY = newCy + rotatedDy;
-
-      await FlutterOverlayWindow.moveOverlay(OverlayPosition(newX, newY));
-
-      print("Transposed from $before to $after. Delta: $deltaDegrees°. "
-          "Pos: (${position.x}, ${position.y}) -> ($newX, $newY)");
+      print("Transposed from $before to $after. "
+          "Pos: (${position.x}, ${position.y}) -> "
+          "(${newOffset.dx}, ${newOffset.dy})");
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('overlayWinsPosX', newX);
-      await prefs.setDouble('overlayWinsPosY', newY);
+      await prefs.setDouble('overlayWinsPosX', newOffset.dx);
+      await prefs.setDouble('overlayWinsPosY', newOffset.dy);
     } catch (e) {
       print('Error in _transpose: $e');
     }
@@ -626,6 +808,33 @@ class _OverlayScreenState extends State<OverlayScreen> {
           children: [
             _buildOverlayContent(),
             if (_showControls) _buildControlsPanel(windowHeight),
+            // DEBUG ONLY -- remove once rotation positioning is confirmed
+            // correct. Shows the shape's absolute position relative to the
+            // real physical screen's top-left corner, centered over the
+            // shape itself so it's visible regardless of where the control
+            // panel/handles are.
+            if (_debugAbsolutePosition != null)
+              Positioned(
+                left: 0,
+                top: 0,
+                width: shapeWidth,
+                height: shapeHeight,
+                child: IgnorePointer(
+                  child: Center(
+                    child: Container(
+                      color: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 2),
+                      child: Text(
+                        'X:${_debugAbsolutePosition!.dx.round()} '
+                        'Y:${_debugAbsolutePosition!.dy.round()}',
+                        style: const TextStyle(
+                            color: Colors.yellow, fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
