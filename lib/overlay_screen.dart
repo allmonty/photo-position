@@ -8,6 +8,8 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:photo_position/theme.dart';
+
 enum OverlayShape { circle, square }
 
 enum OrientationState {
@@ -405,7 +407,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color.fromARGB(200, 244, 67, 54),
+                      color: kGold.withAlpha(200),
                       width: borderWidth,
                     ),
                   ),
@@ -456,7 +458,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   border: Border.all(
-                    color: const Color.fromARGB(200, 244, 67, 54),
+                    color: kGold.withAlpha(200),
                     width: borderWidth,
                   ),
                 ),
@@ -475,7 +477,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                   child: SizedBox(
                     width: 4,
                     height: 24,
-                    child: VerticalDivider(color: Colors.white54, thickness: 2),
+                    child: VerticalDivider(color: kGold, thickness: 2),
                   ),
                 ),
               ),
@@ -496,7 +498,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                   child: SizedBox(
                     height: 4,
                     width: 24,
-                    child: Divider(color: Colors.white54, thickness: 2),
+                    child: Divider(color: kGold, thickness: 2),
                   ),
                 ),
               ),
@@ -517,10 +519,11 @@ class _OverlayScreenState extends State<OverlayScreen> {
       child: Container(
         width: panelWidth,
         height: panelHeight,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
-          color: Colors.black87,
-          borderRadius: BorderRadius.circular(8),
+          color: kCrimsonDark.withAlpha(230),
+          border: Border.all(color: kGold.withAlpha(150), width: 1),
+          borderRadius: BorderRadius.circular(0),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -529,7 +532,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
                 icon: Icons.close,
                 tooltip: 'Close overlay',
                 onPressed: _closeOverlay),
-            const Divider(color: Colors.white54, height: 8),
+            Divider(color: kGold.withAlpha(120), height: 8),
             _buildIconButton(
               icon: _overlayShape == OverlayShape.circle
                   ? Icons.circle_outlined
@@ -549,7 +552,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
     required VoidCallback onPressed,
   }) {
     return IconButton(
-        icon: Icon(icon, color: Colors.white),
+        icon: Icon(icon, color: kGold),
         onPressed: onPressed,
         tooltip: tooltip);
   }

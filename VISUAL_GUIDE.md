@@ -210,63 +210,82 @@
 
 ## Color Scheme
 
-- **Main App Background**: White
+Design system: **Velvet & Gilt Art Deco** (`DESIGN.md`)
+
+| Token | Hex | Role |
+|---|---|---|
+| Surface / Background | `#290806` | Main app background (velvet crimson) |
+| Surface Dark | `#230403` | AppBar, control panel |
+| Surface Mid | `#391411` | Outlined button fill, snackbar |
+| Secondary / Gold | `#E9C349` | Borders, icons, accents, headlines |
+| Tertiary / Cream | `#D4C6A0` | Primary button background |
+| On-Surface | `#FFDAD6` | Body text |
+
+- **Main App Background**: Dark Crimson (`#290806`)
+- **AppBar**: Darkest Crimson (`#230403`) with Burnished Gold (`#E9C349`) title
 - **Overlay Background**: Transparent
-- **Overlay Border**: White with 70% opacity
-- **Border Width**: 3 pixels
-- **Control Panel Background**: Black with 70% opacity
-- **Control Icons**: White
-- **AppBar**: Blue (inversePrimary)
+- **Overlay Border**: Burnished Gold (`#E9C349`) at 80% opacity
+- **Border Width**: 5 pixels
+- **Control Panel Background**: Darkest Crimson at 90% opacity, 1px gold border
+- **Control Icons**: Burnished Gold (`#E9C349`)
+- **Primary Action Button**: Cream (`#D4C6A0`) fill, Crimson text, 2px Gold border, beveled corners
+- **Secondary Action Button**: Mid Crimson fill, Gold text, 1px Gold border, beveled corners
 
 ## Typography
 
-- **App Title**: 28px, Bold
-- **Instructions**: 16px, Regular
-- **Buttons**: 18px
-- **Size Display**: 12px
+Typefaces: **Poiret One** (display / headings) + **Libre Franklin** (body / steps)
+
+| Role | Font | Size | Letter Spacing | Color |
+|---|---|---|---|---|
+| App Title | Poiret One | 20px | 0.05em | Gold |
+| Section Headline | Poiret One | 28px | 0.05em | Gold |
+| Section Label | Poiret One | 14px, w600 | 0.1em | Gold |
+| Button Label | Poiret One | 16px, w600 | 0.05em | — |
+| Body / Instructions | Libre Franklin | 14px | — | On-Surface |
 
 ## Interactions
 
 ### Main App Buttons
-- **Start Overlay**: Creates overlay window
-  - Visual: Blue button with play icon
-  - Feedback: Button changes to "Stop Overlay"
-- **Stop Overlay**: Removes overlay window
-  - Visual: Red button with stop icon
+- **START OVERLAY**: Creates overlay window
+  - Visual: Cream (`#D4C6A0`) plaque with Crimson text, 2px Gold beveled border, play icon
+  - Feedback: Button switches to "STOP OVERLAY" state; "OVERLAY ACTIVE" label appears in Gold
+- **STOP OVERLAY**: Removes overlay window
+  - Visual: Mid-Crimson fill, Gold text and icon, 1px Gold beveled border
 
 ### Overlay Controls
-- **Close (×)**: Removes overlay
-- **Shape Toggle (○/□)**: Switches between circle and square
-- **Size + Button**: Increases size by 20px
-- **Size − Button**: Decreases size by 20px
-- **Hide Controls (👁‍🗨)**: Hides control panel
+- **Close (×)**: Removes overlay; panel is sharp-cornered, dark crimson with 1px gold border
+- **Shape Toggle (○/□)**: Switches between circle and square; icon reflects current shape
 
 ### Drag Gesture
 - **Tap and Drag**: Move overlay anywhere on screen
-- **Tap**: Toggle control visibility
+- **Tap**: Toggle control panel visibility
+
+### Resize Handles
+- Bottom edge (circle): drag vertically — Gold divider tick mark
+- Right edge (square): drag horizontally — Gold divider tick mark
+- Bottom edge (square): drag vertically — Gold divider tick mark
 
 ## Responsive Behavior
 
-- Overlay size is absolute (100-400 pixels)
-- Controls panel fixed to top-right corner
-- Overlay position is screen-relative
+- Overlay size: 50–500 pixels, absolute
+- Controls panel anchored to top-right of overlay window
+- Overlay position is screen-relative, persisted across restarts
 - Transparent areas allow interaction with underlying apps
 
 ## Accessibility
 
 - Large touch targets for all buttons
-- Clear visual feedback
-- High contrast controls (white on black)
-- Simple, intuitive controls
-- Instruction text when controls hidden
+- High contrast: Gold on Crimson throughout
+- Instruction steps visible on home screen at all times
+- Beveled button corners provide tactile visual affordance
 
 ## Performance
 
-- Minimal CPU/GPU usage (simple shapes)
+- Minimal CPU/GPU usage (simple geometric shapes)
 - No impact on underlying apps
 - Instant shape switching
-- Smooth drag interactions
-- Lightweight overlay process
+- Smooth drag interactions via native overlay drag
+- Lightweight overlay Flutter engine
 
 ## Example Use Case: Aligned Product Photos
 
