@@ -13,3 +13,6 @@ Append-only. A later entry that replaces an earlier one says so.
 | 7 | 2026-10-29 | `ChangeNotifier` + `ListenableBuilder`, no `provider`. | Two small view models; a dependency is not worth it. |
 | 8 | 2026-10-29 | Gradle 9.1.0 / AGP 8.13.0. | Android Studio's JDK is 25, which Gradle 8.14 does not support. |
 | 9 | 2026-10-29 | The overlay window is not tested on iOS. | `flutter_overlay_window` is Android-only; only the shared Dart logic and UI could run there, and the project has no `ios/` folder yet. |
+| 10 | 2026-10-29 | `main.dart` holds only the entry points; platform access from the main app goes through `OverlayHost`, and `Dependencies` is the single wiring point. | The 448-line `main.dart` mixed UI, permission, port and channel code that could only be tested by mocking platform channels. |
+| 11 | 2026-10-29 | The `portName` handshake (500 ms delay + `shareData`) is removed. | Both sides use the constant `overlayPortName`; the handshake only delayed startup. |
+| 12 | 2026-10-29 | Slot save/load is covered by unit tests on one repository, plus a single device script (`tool/slots_e2e.sh`). | The logic is in Dart; the script only proves the real window ends up on the saved frame. |

@@ -33,16 +33,19 @@ class SlotsSection extends StatelessWidget {
     final PositionSlot? slot = viewModel.slots[i];
     return Column(
       children: [
-        GestureDetector(
-          key: ValueKey('slot$i'),
-          onTap: slot == null
-              ? null
-              : () async {
-                  final PositionSlot? chosen = await viewModel.select(i);
-                  if (chosen != null) onSelect(chosen);
-                },
-          child: SlotThumbnail(slot: slot),
-        ),
+        Semantics(
+            label: 'Slot ${i + 1}',
+            button: true,
+            child: GestureDetector(
+              key: ValueKey('slot$i'),
+              onTap: slot == null
+                  ? null
+                  : () async {
+                      final PositionSlot? chosen = await viewModel.select(i);
+                      if (chosen != null) onSelect(chosen);
+                    },
+              child: SlotThumbnail(slot: slot),
+            )),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [

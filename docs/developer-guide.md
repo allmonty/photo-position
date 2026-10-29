@@ -18,6 +18,7 @@ Android builds use Gradle 9.1 / AGP 8.13 and need a JDK Gradle supports (Android
 | `dart format lib test testing integration_test` | formatting (CI checks it) |
 | `flutter test integration_test -d <id>` | rotates the real display; Android emulator or iOS simulator |
 | `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates, asserts the window frame moves < 2 px |
+| `tool/slots_e2e.sh` | Android: saves two slots, loads them, asserts the window frame returns within 2 px |
 
 ## Architecture
 
@@ -32,8 +33,10 @@ See [CLAUDE.md](../CLAUDE.md) for the layer map. In short: `OverlayViewModel` ow
 | `test/data/overlay_service_test.dart` | screen size pushed from native |
 | `test/ui/overlay/overlay_rotation_test.dart` | same pixels before/after rotating: circle/square, controls on/off, drag, resize, 20 rotations, nav bar, out-of-view shapes |
 | `test/ui/overlay/overlay_screen_test.dart` | handles, panel, close |
-| `test/ui/home/slots_test.dart` | slots, thumbnail, home screen |
-| `test/home_screen_overlay_test.dart` | start/stop flow |
+| `test/ui/home/slots_test.dart` | slots view model, section, thumbnail |
+| `test/ui/home/home_view_model_test.dart` | start/stop, permission, overlay closing itself, sending a slot |
+| `test/ui/home/home_screen_test.dart` | the home screen on `FakeOverlayHost` |
+| `test/ui/slots_flow_test.dart` | slot save/load through the overlay view model and one repository |
 | `integration_test/rotation_test.dart` | real display rotation on device/simulator |
 
 ## Adding a native-side behaviour

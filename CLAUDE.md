@@ -11,6 +11,7 @@ flutter test                          # unit + widget tests
 dart format --output=none --set-exit-if-changed lib test testing integration_test
 flutter test integration_test -d <device-id>    # real-device rotation tests
 tool/rotation_e2e.sh                  # Android only: real overlay window across rotations (needs adb + app installed)
+tool/slots_e2e.sh                     # Android only: save two slots, load them, window returns to the saved frame
 flutter run                           # run on a device/emulator
 flutter build apk --release
 ```
@@ -23,13 +24,15 @@ Android builds need a JDK Gradle 9.1 supports (the project builds with Android S
 
 ```
 lib/
-  main.dart                    entry points, HomeScreen (start/stop, slots)
+  main.dart                    the two entry points only (main, overlayMain)
+  config/dependencies.dart     the one place that picks implementations (tests override them)
   domain/                      pure Dart: OverlayGeometry, PositionSlot, geometry.dart (plugin-offset maths)
   data/repositories/           PositionRepository (+ shared_preferences impl)
-  data/services/               OverlayService: wrapper over the plugin and the native screen bridge
+  data/services/               OverlayService (overlay side: window, screen size), OverlayHost (main-app side: permission, show, messages)
+  ui/core/                     theme, Art Deco widgets
   ui/overlay/{view_models,widgets}/   OverlayViewModel, OverlayScreen
-  ui/home/{view_models,widgets}/      SlotsViewModel, SlotsSection, SlotThumbnail
-testing/fakes/                 FakeOverlayService (behaves like the native window), MemoryPositionRepository
+  ui/home/{view_models,widgets}/      HomeViewModel, SlotsViewModel, HomeScreen, SlotsSection, SlotThumbnail
+testing/fakes/                 FakeOverlayService (behaves like the native window), FakeOverlayHost, MemoryPositionRepository
 android/.../ScreenSizeBridge.kt, PhotoPositionApplication.kt, MainActivity.kt   native screen-size bridge
 ```
 
@@ -45,7 +48,7 @@ Two non-obvious facts about the plugin, both verified on a device:
 
 ### Cross-engine communication
 
-`IsolateNameServer` port `photo_position_overlay_port` (overlay -> main: `close_overlay`), `FlutterOverlayWindow.shareData` (main -> overlay: `close_overlay_and_reset`, `load_position`), and shared_preferences (the overlay writes the current position; the main app `reload()`s before reading).
+`IsolateNameServer` port `photo_position_overlay_port` (overlay -> main: `close_overlay`; owned by `PluginOverlayHost`), `FlutterOverlayWindow.shareData` (main -> overlay: `close_overlay_and_reset`, `load_position`), and shared_preferences (the overlay writes the current position; the main app `reload()`s before reading).
 
 ### Slots
 
@@ -58,6 +61,7 @@ Three `PositionSlot`s (geometry + the screen size it was saved on) are copied fr
 | `test/domain` | plugin-offset maths, JSON validation, clamping |
 | `test/data` | repository (incl. legacy-key migration), native-bridge channel |
 | `test/ui/overlay` | rotation invariance with `FakeOverlayService`, widget gestures |
-| `test/ui/home` | slots view model, section, thumbnail |
+| `test/ui/home` | home/slots view models, home screen, slot section, thumbnail |
+| `test/ui/slots_flow_test.dart` | overlay persists -> slots copy -> loading moves the overlay (one repository) |
 | `integration_test` | real display rotation on a device/simulator |
-| `tool/rotation_e2e.sh` | real overlay window frame before/after rotating (Android) |
+| `tool/rotation_e2e.sh`, `tool/slots_e2e.sh` | real overlay window frame before/after rotating, and after loading a slot (Android) |
