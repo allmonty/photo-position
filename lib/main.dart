@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // needs time to reach initState() and register its message listener
       // (see OverlayScreen.initState/_handleOverlayMessage). shareData()
       // sent before that listener attaches is simply lost, so wait for it.
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       await FlutterOverlayWindow.shareData(
         {
           "portName": _portName,

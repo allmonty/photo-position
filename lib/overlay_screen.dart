@@ -5,10 +5,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:photo_position/theme.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:photo_position/theme.dart';
 
 enum OverlayShape { circle, square }
 
@@ -182,8 +181,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
   OrientationState? _pendingOrientation;
   Timer? _orientationDebounce;
   bool _isTransposing = false;
-  StreamSubscription? _overlaySubscription;
-  StreamSubscription? _orientationSub;
+  StreamSubscription<dynamic>? _overlaySubscription;
+  StreamSubscription<dynamic>? _orientationSub;
 
   // resizeOverlay's third argument is enableDrag, hence !isResizing: while a
   // resize handle is being dragged, window-level drag must be disabled so
@@ -198,7 +197,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
           width.toInt(), height.toInt(), !isResizing);
     } catch (e) {
       // Overlay service may not be ready yet; retry after a short delay.
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
       try {
         await FlutterOverlayWindow.resizeOverlay(
@@ -285,7 +284,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
     if (event is! Map) return;
     setState(() {
       if (event['portName'] != null) {
-        _portName = event['portName'];
+        _portName = event['portName'] as String?;
       }
       if (event['action'] == "close_overlay_and_reset") {
         _closeOverlay();
@@ -318,7 +317,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
       final isWindowActive = await FlutterOverlayWindow.isActive();
       if (isWindowActive) {
         // Wait for OS layout to settle
-        await Future.delayed(const Duration(milliseconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 600));
         if (mounted) {
           await FlutterOverlayWindow.moveOverlay(
             OverlayPosition(savedX, savedY),
@@ -326,7 +325,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
         }
         return;
       }
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     }
     // All 20 polls exhausted without the window becoming active; clear the
     // flag so a later trigger (e.g. a delayed portName message) can retry
@@ -587,7 +586,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
     }
 
     // Small delay to ensure preferences are flushed and message is sent
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await FlutterOverlayWindow.closeOverlay();
   }
 
@@ -620,7 +619,7 @@ class _OverlayScreenState extends State<OverlayScreen> {
       _loadedSettings = true;
     });
 
-    _restoreOverlayPosition();
+    unawaited(_restoreOverlayPosition());
   }
 
   @override

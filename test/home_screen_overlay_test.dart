@@ -138,7 +138,7 @@ void main() {
     // the real event loop instead.
     await tester.runAsync(() async {
       overlayPort!.send({'action': 'close_overlay'});
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     });
     await tester.pump();
 
