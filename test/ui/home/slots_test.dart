@@ -26,9 +26,8 @@ void main() {
     vm = SlotsViewModel(repository: repo, screen: () => screen);
   });
 
-  test('cannot save before the overlay has been positioned', () async {
+  test('saving before the overlay was positioned does nothing', () async {
     await vm.load();
-    expect(vm.canSave, isFalse);
     await vm.saveCurrentTo(0);
     expect(vm.slots, [null, null, null]);
   });

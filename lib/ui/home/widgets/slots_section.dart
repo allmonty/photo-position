@@ -50,8 +50,7 @@ class SlotsSection extends StatelessWidget {
               key: ValueKey('saveSlot$i'),
               icon: const Icon(Icons.save_outlined, color: kGold),
               tooltip: 'Save current position to slot ${i + 1}',
-              onPressed:
-                  viewModel.canSave ? () => viewModel.saveCurrentTo(i) : null,
+              onPressed: () => viewModel.saveCurrentTo(i),
             ),
             IconButton(
               key: ValueKey('clearSlot$i'),

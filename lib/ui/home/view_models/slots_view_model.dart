@@ -18,20 +18,17 @@ class SlotsViewModel extends ChangeNotifier {
   final Size Function() _screen;
   List<PositionSlot?> _slots =
       List<PositionSlot?>.filled(PositionRepository.slotCount, null);
-  bool _hasCurrent = false;
 
   List<PositionSlot?> get slots => _slots;
 
-  /// False until the overlay has been positioned at least once.
-  bool get canSave => _hasCurrent;
-
   Future<void> load() async {
     _slots = await _repository.loadSlots();
-    _hasCurrent = await _repository.loadCurrent(screen: _screen()) != null;
     notifyListeners();
   }
 
-  /// Copies the overlay's current position into slot [index].
+  /// Copies the overlay's current position into slot [index]; does nothing if
+  /// the overlay was never positioned. Reads storage now, because the overlay
+  /// keeps saving while this screen stays open.
   Future<void> saveCurrentTo(int index) async {
     final PositionSlot? current =
         await _repository.loadCurrent(screen: _screen());

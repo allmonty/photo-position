@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.WindowInsets
 import android.view.WindowManager
@@ -48,11 +50,18 @@ class ScreenSizeBridge : BroadcastReceiver() {
 
         /**
          * Lets the overlay engine pull the screen geometry. The main app calls
-         * this right after showOverlay, which creates the cached engine
-         * synchronously; safe to call repeatedly.
+         * this right after showOverlay; the cached engine appears shortly
+         * after, so this retries for ~10s. Safe to call repeatedly.
          */
-        fun attach(context: Context) {
-            val engine = FlutterEngineCache.getInstance().get(OVERLAY_ENGINE_TAG) ?: return
+        fun attach(context: Context, attemptsLeft: Int = 50) {
+            val engine = FlutterEngineCache.getInstance().get(OVERLAY_ENGINE_TAG)
+            if (engine == null) {
+                // The plugin creates its engine asynchronously after showOverlay.
+                if (attemptsLeft > 0) {
+                    Handler(Looper.getMainLooper()).postDelayed({ attach(context, attemptsLeft - 1) }, 200)
+                }
+                return
+            }
             MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
                 if (call.method == "getScreen") result.success(describe(context)) else result.notImplemented()
             }
