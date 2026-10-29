@@ -19,7 +19,7 @@ iOS: `flutter run -d <simulator-id>` shows the home screen and slots; there is n
 | `flutter test` | unit and widget tests, no device |
 | `dart format lib test testing integration_test` | formatting (CI checks it) |
 | `flutter test integration_test -d <id>` | rotates the real display; Android emulator or iOS simulator |
-| `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates, asserts the window frame moves < 2 px |
+| `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates through all four orientations, asserts the shape is where the glass says (within 4 px) |
 | `tool/slots_e2e.sh` | Android: saves two slots, loads them, asserts the window frame returns within 2 px |
 
 ## Architecture
@@ -30,10 +30,10 @@ See [CLAUDE.md](../CLAUDE.md) for the layer map. In short: `OverlayViewModel` ow
 
 | File | Covers |
 |---|---|
-| `test/domain/geometry_test.dart` | px <-> plugin offset round trips (portrait/landscape, nav-bar shift), JSON, clamping |
+| `test/domain/geometry_test.dart` | px <-> plugin offset round trips, glass <-> display for each rotation, JSON, clamping |
 | `test/data/position_repository_test.dart` | storage, corrupt data, slots, legacy key migration |
 | `test/data/overlay_service_test.dart` | screen size pushed from native |
-| `test/ui/overlay/overlay_rotation_test.dart` | same pixels before/after rotating: circle/square, controls on/off, drag, resize, 20 rotations, nav bar, out-of-view shapes |
+| `test/ui/overlay/overlay_rotation_test.dart` | glass pinning: corner mapping for each rotation, circle/square, controls on/off, drag and resize while turned, 20 turns, nav bar, slots |
 | `test/ui/overlay/overlay_screen_test.dart` | handles, panel, close |
 | `test/ui/home/slots_test.dart` | slots view model, section, thumbnail |
 | `test/ui/home/home_view_model_test.dart` | start/stop, permission, overlay closing itself, sending a slot |

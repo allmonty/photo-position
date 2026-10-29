@@ -40,11 +40,11 @@ Dependencies point one way: widgets -> view models -> repositories/services -> d
 
 ### Position model (the important part)
 
-The overlay's position is one absolute rectangle, `OverlayGeometry` (dp from the screen's top-left). `OverlayViewModel._apply` is the only place that pushes it to the native window, via `toPluginOffset`. Rotation re-applies the same rectangle; nothing is transposed. If the rectangle no longer fits the screen it is shown clamped, but the stored value is not changed, so rotating back is exact.
+The overlay is pinned to the phone's glass. Its position is one rectangle, `OverlayGeometry`, stored in the phone's **natural orientation** ("glass coordinates"); it never changes when the phone turns. `glassToDisplay`/`displayToGlass` (`domain/geometry.dart`) convert to and from what the rotated display draws, using the display rotation (`Surface.ROTATION_*`) the native bridge reports. A circle stays a circle, a rectangle turns 90 degrees with the phone, the control panel is laid out upright in the display. Edits made while the phone is turned (drag, resize, shape toggle) are converted back to glass coordinates. `OverlayViewModel._apply` is the only place that pushes the displayed rectangle to the native window, via `toPluginOffset`. Slots are glass coordinates too.
 
 Two non-obvious facts about the plugin, both verified on a device:
 - The window is `Gravity.CENTER`: its x/y is the offset of the window centre from the centre of its **parent frame**, which excludes the navigation bar (`centreShift`).
-- The overlay engine's `Display.size` never updates after rotation. `ScreenSizeBridge.kt` pushes (`screenChanged`) and answers (`getScreen`) the real size over channel `photo_position/screen`. Plugin calls made before its channel exists throw `MissingPluginException`; `PluginOverlayService` retries them.
+- The overlay engine's `Display.size` never updates after rotation. `ScreenSizeBridge.kt` pushes (`screenChanged`) and answers (`getScreen`) the real size, parent-frame shift and display rotation over channel `photo_position/screen`. Plugin calls made before its channel exists throw `MissingPluginException`; `PluginOverlayService` retries them.
 
 ### Cross-engine communication
 
@@ -52,7 +52,7 @@ Two non-obvious facts about the plugin, both verified on a device:
 
 ### Slots
 
-Three `PositionSlot`s (geometry + the screen size it was saved on) are copied from/to the persisted current position on the home screen. Loading a slot into a different orientation clamps it into the screen.
+Three `PositionSlot`s (glass geometry + the natural screen size it was saved on) are copied from/to the persisted current position on the home screen. A slot lands on the same part of the glass in every orientation; only a slot from a bigger phone is clamped.
 
 ## Testing
 
