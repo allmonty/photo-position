@@ -5,11 +5,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/theme.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum OverlayShape { circle, square }
+export 'package:photo_position/domain/models/overlay_geometry.dart' show OverlayShape;
 
 enum OrientationState {
   portraitUp,
