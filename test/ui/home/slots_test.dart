@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photo_position/config/dependencies.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
-import 'package:photo_position/main.dart';
-import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
+import 'package:photo_position/ui/home/widgets/home_screen.dart';
 import 'package:photo_position/ui/home/widgets/slot_thumbnail.dart';
 import 'package:photo_position/ui/home/widgets/slots_section.dart';
 
+import '../../../testing/fakes/fake_overlay_host.dart';
 import '../../../testing/fakes/memory_position_repository.dart';
 
 const screen = Size(400, 800);
@@ -90,7 +92,9 @@ void main() {
     repo.slots[1] = current;
     await tester.pumpWidget(MaterialApp(
       theme: artDecoTheme,
-      home: HomeScreen(repository: repo),
+      home: HomeScreen(
+          dependencies:
+              Dependencies(repository: repo, host: FakeOverlayHost.new)),
     ));
     await tester.pump();
     await tester.dragUntilVisible(

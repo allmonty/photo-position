@@ -3,14 +3,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:photo_position/data/services/overlay_host.dart';
 import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
-import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
-
-/// Port the main app listens on; the overlay tells it when it has closed.
-const String overlayPortName = 'photo_position_overlay_port';
 
 // Keys for widgets that tests need to find and drive directly.
 const Key overlayShapeContainerKey = ValueKey('overlayShapeContainer');

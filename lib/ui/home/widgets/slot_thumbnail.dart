@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
-import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/core/theme.dart';
 
 /// A phone-shaped rectangle (the aspect of the screen the position was saved
 /// on) with the saved shape drawn where it sits on that screen.

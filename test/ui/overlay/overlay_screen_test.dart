@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
-import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
 import 'package:photo_position/ui/overlay/widgets/overlay_screen.dart';
 

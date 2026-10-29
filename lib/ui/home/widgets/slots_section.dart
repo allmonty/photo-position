@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
-import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
 import 'package:photo_position/ui/home/widgets/slot_thumbnail.dart';
 
