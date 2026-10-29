@@ -11,16 +11,21 @@ import '../../../testing/fakes/memory_position_repository.dart';
 const portrait = Size(400, 800);
 const landscape = Size(800, 400);
 
+/// A glass spot near the phone's top-left corner.
+const topLeftOnGlass = OverlayGeometry(
+  left: 20,
+  top: 30,
+  width: 100,
+  height: 100,
+  shape: OverlayShape.square,
+);
+
 /// The shape's rectangle on the real screen, derived from where the fake
 /// native window actually is (the shape sits 20dp inside the window corner).
 Rect shapeOnScreen(FakeOverlayService s, OverlayViewModel vm) {
   final g = vm.geometry!;
   return Rect.fromLTWH(
-    s.visibleRect.left + 20,
-    s.visibleRect.top + 20,
-    g.width,
-    g.height,
-  );
+      s.visibleRect.left + 20, s.visibleRect.top + 20, g.width, g.height);
 }
 
 Future<void> settle() => Future<void>.delayed(Duration.zero);
@@ -30,112 +35,220 @@ void main() {
   late MemoryPositionRepository repo;
   late OverlayViewModel vm;
 
+  void turn(int rotation, {Offset shift = Offset.zero}) {
+    service.rotateTo(rotation.isOdd ? landscape : portrait,
+        rotation: rotation, centreShift: shift);
+  }
+
+  Future<void> startWith(OverlayGeometry glass) async {
+    repo.current = PositionSlot(geometry: glass, screen: portrait);
+    await vm.start();
+  }
+
   setUp(() {
     service = FakeOverlayService(screen: portrait);
-    // Fits both orientations, so "same pixels" is meaningful in the tests below.
-    repo = MemoryPositionRepository()
-      ..current = const PositionSlot(
-        geometry: OverlayGeometry(
-            left: 100,
-            top: 100,
-            width: 200,
-            height: 200,
-            shape: OverlayShape.circle),
-        screen: portrait,
-      );
+    repo = MemoryPositionRepository();
     vm = OverlayViewModel(service: service, repository: repo);
   });
 
   tearDown(() => vm.dispose());
 
-  for (final shape in OverlayShape.values) {
-    for (final controls in [true, false]) {
-      test('$shape, controls=$controls: same pixels before and after rotating',
-          () async {
-        repo.current = PositionSlot(
-          geometry: OverlayGeometry(
-              left: 60,
-              top: 120,
-              width: 150,
-              height: shape == OverlayShape.circle ? 150 : 90,
-              shape: shape),
-          screen: portrait,
-        );
-        await vm.start();
-        if (!controls) vm.toggleControls();
-        final before = shapeOnScreen(service, vm);
-        expect(before, Rect.fromLTWH(60, 120, 150, vm.geometry!.height));
+  group('pinned to the glass', () {
+    test(
+        'a shape near the top-left corner follows that corner when the phone turns',
+        () async {
+      await startWith(topLeftOnGlass);
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 30, 100, 100));
 
-        service.rotateTo(landscape);
-        await settle();
-        expect(shapeOnScreen(service, vm), before);
-
-        service.rotateTo(portrait);
-        await settle();
-        expect(shapeOnScreen(service, vm), before);
-      });
-    }
-  }
-
-  test('a dragged position survives rotation', () async {
-    await vm.start();
-    service.dragBy(const Offset(40, -60));
-    await vm.dragEnded();
-    final before = shapeOnScreen(service, vm);
-
-    service.rotateTo(landscape);
-    await settle();
-
-    expect(shapeOnScreen(service, vm), before);
-    expect(repo.current!.geometry, vm.geometry);
-  });
-
-  test('a resized shape keeps its top-left and survives rotation', () async {
-    await vm.start();
-    final topLeft = shapeOnScreen(service, vm).topLeft;
-    vm.beginResize();
-    vm.updateResize(ResizeAxis.both, 100);
-    await settle();
-    expect(service.dragEnabled, isFalse);
-    await vm.endResize();
-    expect(service.dragEnabled, isTrue);
-
-    final before = shapeOnScreen(service, vm);
-    expect(before.topLeft, topLeft);
-    expect(before.size, const Size(300, 300));
-
-    service.rotateTo(landscape);
-    await settle();
-    expect(shapeOnScreen(service, vm), before);
-  });
-
-  test('rotating many times never drifts', () async {
-    await vm.start();
-    final before = shapeOnScreen(service, vm);
-    for (var i = 0; i < 20; i++) {
-      service.rotateTo(i.isEven ? landscape : portrait);
+      // Phone turned 90 degrees counter-clockwise: its top-left corner is now bottom-left.
+      turn(1);
       await settle();
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(30, 280, 100, 100));
+
+      // Upside down: top-left corner is bottom-right.
+      turn(2);
+      await settle();
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(280, 670, 100, 100));
+
+      // 90 degrees clockwise: top-left corner is top-right.
+      turn(3);
+      await settle();
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(670, 20, 100, 100));
+    });
+
+    test('the stored glass position and shape never change by rotating',
+        () async {
+      await startWith(topLeftOnGlass);
+      for (final r in [1, 2, 3, 0, 3, 1]) {
+        turn(r);
+        await settle();
+      }
+      expect(repo.current!.geometry, topLeftOnGlass);
+    });
+
+    for (final shape in OverlayShape.values) {
+      for (final controls in [true, false]) {
+        test(
+            '$shape, controls=$controls: back in portrait it is exactly where it started',
+            () async {
+          await startWith(OverlayGeometry(
+            left: 60,
+            top: 120,
+            width: 150,
+            height: shape == OverlayShape.circle ? 150 : 90,
+            shape: shape,
+          ));
+          if (!controls) vm.toggleControls();
+          final before = shapeOnScreen(service, vm);
+
+          turn(1);
+          await settle();
+          expect(vm.geometry!.shape, shape);
+          turn(0);
+          await settle();
+          expect(shapeOnScreen(service, vm), before);
+        });
+      }
     }
-    service.rotateTo(portrait);
-    await settle();
-    expect(shapeOnScreen(service, vm), before);
+
+    test(
+        'a rectangle turns with the glass: width and height swap, a circle stays round',
+        () async {
+      await startWith(const OverlayGeometry(
+        left: 60,
+        top: 120,
+        width: 150,
+        height: 90,
+        shape: OverlayShape.square,
+      ));
+      turn(1);
+      await settle();
+      expect(vm.geometry!.width, 90);
+      expect(vm.geometry!.height, 150);
+
+      await vm.toggleShape();
+      final circle = vm.geometry!;
+      expect(circle.shape, OverlayShape.circle);
+      expect(circle.width, circle.height);
+    });
+
+    test('20 turns through every orientation never drift', () async {
+      await startWith(topLeftOnGlass);
+      final before = shapeOnScreen(service, vm);
+      for (var i = 0; i < 20; i++) {
+        turn(i % 4);
+        await settle();
+      }
+      turn(0);
+      await settle();
+      expect(shapeOnScreen(service, vm), before);
+    });
+
+    test(
+        'same glass spot when the navigation bar sits at the bottom, then at the side',
+        () async {
+      service = FakeOverlayService(
+          screen: portrait, centreShift: const Offset(0, -12));
+      vm = OverlayViewModel(service: service, repository: repo);
+      await startWith(topLeftOnGlass);
+      final before = shapeOnScreen(service, vm);
+
+      turn(1, shift: const Offset(-12, 0));
+      await settle();
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(30, 280, 100, 100));
+
+      turn(0, shift: const Offset(0, -12));
+      await settle();
+      expect(shapeOnScreen(service, vm), before);
+    });
   });
 
-  test('loading a portrait slot in landscape clamps it onto the screen',
-      () async {
-    await vm.start();
-    service.rotateTo(landscape);
-    await settle();
-    await vm.loadPosition(const PositionSlot(
-      geometry: OverlayGeometry(
-          left: 300,
-          top: 650,
+  group('editing while the phone is turned', () {
+    test('a drag in landscape moves the shape along the matching glass axis',
+        () async {
+      await startWith(topLeftOnGlass);
+      turn(1);
+      await settle();
+
+      // +x on the rotated display is +y (down) on the glass.
+      service.dragBy(const Offset(50, 0));
+      await vm.dragEnded();
+
+      turn(0);
+      await settle();
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 80, 100, 100));
+      expect(repo.current!.geometry.top, 80);
+      expect(repo.current!.geometry.left, 20);
+    });
+
+    test('resizing the displayed width in landscape resizes the glass height',
+        () async {
+      await startWith(topLeftOnGlass);
+      turn(1);
+      await settle();
+
+      vm.beginResize();
+      vm.updateResize(ResizeAxis.width, 40);
+      await vm.endResize();
+      expect(vm.geometry!.width, 140);
+
+      turn(0);
+      await settle();
+      final g = vm.geometry!;
+      expect(g.width, 100);
+      expect(g.height, 140);
+      expect(repo.current!.geometry.height, 140);
+    });
+
+    test('the displayed top-left corner stays put while resizing in landscape',
+        () async {
+      await startWith(topLeftOnGlass);
+      turn(1);
+      await settle();
+      final topLeft = shapeOnScreen(service, vm).topLeft;
+
+      vm.beginResize();
+      vm.updateResize(ResizeAxis.both, 20);
+      await vm.endResize();
+      expect(shapeOnScreen(service, vm).topLeft, topLeft);
+    });
+  });
+
+  group('slots are glass positions', () {
+    test('a slot lands on the same part of the glass in every orientation',
+        () async {
+      await vm.start();
+      const slot = PositionSlot(geometry: topLeftOnGlass, screen: portrait);
+
+      await vm.loadPosition(slot);
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 30, 100, 100));
+
+      turn(1);
+      await settle();
+      await vm.loadPosition(slot);
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(30, 280, 100, 100));
+    });
+
+    test('a slot from a bigger phone is pulled onto this one', () async {
+      await vm.start();
+      await vm.loadPosition(const PositionSlot(
+        geometry: OverlayGeometry(
+          left: 900,
+          top: 1500,
           width: 100,
           height: 100,
-          shape: OverlayShape.square),
-      screen: portrait,
-    ));
-    expect(shapeOnScreen(service, vm), const Rect.fromLTWH(300, 300, 100, 100));
+          shape: OverlayShape.circle,
+        ),
+        screen: Size(1080, 2400),
+      ));
+      expect(
+          shapeOnScreen(service, vm), const Rect.fromLTWH(300, 700, 100, 100));
+    });
   });
 
   test('start waits for the native window before moving it', () async {
@@ -150,52 +263,9 @@ void main() {
 
   test('a failed apply does not block the next one', () async {
     service.failNextResize = true;
-    await vm.start();
-    service.rotateTo(landscape);
+    await startWith(topLeftOnGlass);
+    turn(1);
     await settle();
     expect(shapeOnScreen(service, vm), vm.geometry!.rect);
-  });
-
-  test('same pixels when the navigation bar shifts the window centre',
-      () async {
-    // Portrait: nav bar at the bottom. Landscape: nav bar at the side.
-    service =
-        FakeOverlayService(screen: portrait, centreShift: const Offset(0, -12));
-    vm = OverlayViewModel(service: service, repository: repo);
-    await vm.start();
-    final before = shapeOnScreen(service, vm);
-
-    service.rotateTo(landscape, centreShift: const Offset(-12, 0));
-    await settle();
-    expect(shapeOnScreen(service, vm), before);
-
-    service.rotateTo(portrait, centreShift: const Offset(0, -12));
-    await settle();
-    expect(shapeOnScreen(service, vm), before);
-  });
-
-  test(
-      'a shape that no longer fits is pulled into view, and restored on return',
-      () async {
-    repo.current = const PositionSlot(
-      geometry: OverlayGeometry(
-          left: 100,
-          top: 600,
-          width: 150,
-          height: 150,
-          shape: OverlayShape.circle),
-      screen: portrait,
-    );
-    await vm.start();
-    final before = shapeOnScreen(service, vm);
-
-    service.rotateTo(landscape);
-    await settle();
-    // Landscape is only 400 high: pulled up so it stays fully visible.
-    expect(shapeOnScreen(service, vm), const Rect.fromLTWH(100, 250, 150, 150));
-
-    service.rotateTo(portrait);
-    await settle();
-    expect(shapeOnScreen(service, vm), before);
   });
 }

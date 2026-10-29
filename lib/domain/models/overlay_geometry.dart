@@ -2,15 +2,14 @@ import 'dart:ui';
 
 enum OverlayShape { circle, square }
 
-/// Where the overlay shape sits on screen, in logical pixels (dp) measured
-/// from the screen's top-left corner.
+/// A shape's rectangle in logical pixels (dp) from a screen's top-left.
 ///
-/// Stored as an absolute rectangle instead of the plugin's centre-relative
-/// offset: that offset is reinterpreted by Android when the screen
-/// dimensions swap on rotation, which is what made the overlay jump. An
-/// absolute rectangle never changes by itself, so it is re-applied instead
-/// of being "transposed". [width]/[height] are the visible shape only;
-/// resize handles and the control panel are not part of it.
+/// The overlay is pinned to the phone's glass, so what is stored and saved in
+/// slots is this rectangle in the phone's *natural* orientation ("glass
+/// coordinates"); it never changes when the phone rotates. The rectangle the
+/// rotated display draws is derived from it with `glassToDisplay`.
+/// [width]/[height] are the visible shape only; resize handles and the
+/// control panel are not part of it.
 class OverlayGeometry {
   const OverlayGeometry({
     required this.left,

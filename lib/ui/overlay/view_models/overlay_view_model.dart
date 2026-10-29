@@ -13,11 +13,12 @@ enum ResizeAxis { width, height, both }
 
 /// State and behaviour of the overlay window.
 ///
-/// [geometry] is the single source of truth, in absolute screen dp. Every
-/// change -- start, resize, rotation, loading a slot -- goes through
-/// [_apply], which pushes size and position to the native window from that
-/// one value. Rotation therefore needs no maths: the screen changes, the
-/// same rectangle is re-applied.
+/// The shape is pinned to the phone's glass: its rectangle is stored in the
+/// phone's natural orientation ("glass" coordinates) and never changes when
+/// the phone turns. [geometry] is that same physical spot as the rotated
+/// display draws it. Every change -- start, resize, rotation, loading a
+/// slot -- goes through [_apply], which pushes size and position of
+/// [geometry] to the native window.
 class OverlayViewModel extends ChangeNotifier {
   OverlayViewModel({
     required OverlayService service,
@@ -40,12 +41,22 @@ class OverlayViewModel extends ChangeNotifier {
   OverlayGeometry? _resizeStart;
   Future<void> _pending = Future<void>.value();
 
-  /// What is shown now: the stored rectangle, pulled onto the current screen
-  /// if it no longer fits (e.g. placed low in portrait, then rotated to a
-  /// landscape screen that is shorter). The stored value itself is not
-  /// changed by rotation, so rotating back restores the exact original.
-  /// Null until [start] has loaded or created one.
-  OverlayGeometry? get geometry => _stored?.clampedTo(_service.screen);
+  Size get _natural => naturalScreen(_service.screen, _service.rotation);
+
+  /// The shape as the display draws it now (screen dp, rotated from the
+  /// glass position). Null until [start] has loaded or created one.
+  OverlayGeometry? get geometry {
+    final OverlayGeometry? g = _stored;
+    if (g == null) return null;
+    return glassToDisplay(g, _natural, _service.rotation)
+        .clampedTo(_service.screen);
+  }
+
+  /// Edits happen on the rotated display; keep the result in glass coordinates.
+  void _setDisplay(OverlayGeometry d) {
+    _stored = displayToGlass(d, _natural, _service.rotation);
+  }
+
   bool get showControls => _showControls;
   bool get isResizing => _isResizing;
   bool get closed => _closed;
@@ -58,14 +69,17 @@ class OverlayViewModel extends ChangeNotifier {
     }
     final PositionSlot? saved =
         await _repository.loadCurrent(screen: _service.screen);
-    _stored = saved?.geometry ??
-        OverlayGeometry(
-          left: (_service.screen.width - 200) / 2,
-          top: (_service.screen.height - 200) / 2,
-          width: 200,
-          height: 200,
-          shape: OverlayShape.circle,
-        );
+    if (saved != null) {
+      _stored = saved.geometry.clampedTo(_natural);
+    } else {
+      _setDisplay(OverlayGeometry(
+        left: (_service.screen.width - 200) / 2,
+        top: (_service.screen.height - 200) / 2,
+        width: 200,
+        height: 200,
+        shape: OverlayShape.circle,
+      ));
+    }
     notifyListeners();
     // The native window is created asynchronously by the main app.
     while (!await _service.isActive()) {
@@ -91,10 +105,10 @@ class OverlayViewModel extends ChangeNotifier {
       });
 
   Future<void> _persist() async {
-    final OverlayGeometry? g = geometry;
+    final OverlayGeometry? g = _stored;
     if (g != null) {
       await _repository
-          .saveCurrent(PositionSlot(geometry: g, screen: _service.screen));
+          .saveCurrent(PositionSlot(geometry: g, screen: _natural));
     }
   }
 
@@ -107,14 +121,14 @@ class OverlayViewModel extends ChangeNotifier {
     // Re-read after the awaits: a tap on the shape toggle also ends with a
     // pointer-up, and must not be overwritten with the shape from before it.
     final OverlayGeometry g = geometry!;
-    _stored = fromPluginOffset(
+    _setDisplay(fromPluginOffset(
       pos,
       _service.screen,
       centreShift: _service.centreShift,
       width: g.width,
       height: g.height,
       shape: g.shape,
-    );
+    ));
     notifyListeners();
     await _persist();
   }
@@ -133,13 +147,13 @@ class OverlayViewModel extends ChangeNotifier {
     if (s == null) return;
     double clamp(double v) =>
         v.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize);
-    _stored = OverlayGeometry(
+    _setDisplay(OverlayGeometry(
       left: s.left,
       top: s.top,
       width: axis == ResizeAxis.height ? s.width : clamp(s.width + delta),
       height: axis == ResizeAxis.width ? s.height : clamp(s.height + delta),
       shape: s.shape,
-    );
+    ));
     notifyListeners();
     unawaited(_apply());
   }
@@ -156,13 +170,13 @@ class OverlayViewModel extends ChangeNotifier {
     final OverlayGeometry g = geometry!;
     final bool toCircle = g.shape == OverlayShape.square;
     final double side = min(g.width, g.height);
-    _stored = OverlayGeometry(
+    _setDisplay(OverlayGeometry(
       left: g.left,
       top: g.top,
       width: toCircle ? side : g.width,
       height: toCircle ? side : g.height,
       shape: toCircle ? OverlayShape.circle : OverlayShape.square,
-    );
+    ));
     notifyListeners();
     await _apply();
     await _persist();
@@ -173,10 +187,11 @@ class OverlayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Moves the overlay to a saved position. The slot may come from another
-  /// orientation, so it is clamped into the current screen instead of rotated.
+  /// Moves the overlay to a saved spot on the glass. Slots are in glass
+  /// coordinates, so the current rotation does not matter; only a slot from
+  /// a different phone is clamped onto this one.
   Future<void> loadPosition(PositionSlot slot) async {
-    _stored = slot.geometry;
+    _stored = slot.geometry.clampedTo(_natural);
     notifyListeners();
     await _apply();
     await _persist();

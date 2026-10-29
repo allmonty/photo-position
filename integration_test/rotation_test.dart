@@ -26,41 +26,38 @@ void main() {
   tearDown(
       () => SystemChrome.setPreferredOrientations(DeviceOrientation.values));
 
-  testWidgets('overlay keeps its absolute rectangle across a real rotation',
+  testWidgets(
+      'overlay stays on the same part of the glass across a real rotation',
       (tester) async {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     await tester.pumpAndSettle();
     final service = FakeOverlayService(screen: const Size(400, 800));
+    const glass = OverlayGeometry(
+        left: 20, top: 30, width: 120, height: 120, shape: OverlayShape.square);
     final repo = MemoryPositionRepository()
-      ..current = const PositionSlot(
-        geometry: OverlayGeometry(
-            left: 100,
-            top: 100,
-            width: 200,
-            height: 200,
-            shape: OverlayShape.circle),
-        screen: Size(400, 800),
-      );
+      ..current = const PositionSlot(geometry: glass, screen: Size(400, 800));
     final vm = OverlayViewModel(service: service, repository: repo);
     await tester.pumpWidget(MaterialApp(
       theme: artDecoTheme,
       home: OverlayScreen(viewModel: vm, listenForMainApp: false),
     ));
     await tester.pumpAndSettle();
-    final Rect before = service.visibleRect;
-    final Rect shapeBefore =
-        tester.getRect(find.byKey(overlayShapeContainerKey));
+    expect(service.visibleRect.topLeft + const Offset(20, 20),
+        const Offset(20, 30));
 
     // Real device rotation, then the screen change the native bridge would report.
     await SystemChrome.setPreferredOrientations(
         [DeviceOrientation.landscapeLeft]);
     await tester.pumpAndSettle(const Duration(seconds: 2));
-    service.rotateTo(const Size(800, 400));
+    service.rotateTo(const Size(800, 400), rotation: 1);
     await tester.pumpAndSettle();
 
-    expect(service.visibleRect, before);
-    expect(tester.getRect(find.byKey(overlayShapeContainerKey)), shapeBefore);
-    expect(vm.geometry, repo.current!.geometry);
+    // The glass' top-left corner is the display's bottom-left corner now.
+    expect(service.visibleRect.topLeft + const Offset(20, 20),
+        const Offset(30, 260));
+    expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
+        const Size(120, 120));
+    expect(repo.current!.geometry, glass);
   });
 
   testWidgets('home screen shows saved positions in portrait and landscape',

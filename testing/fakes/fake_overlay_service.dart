@@ -16,6 +16,7 @@ class FakeOverlayService implements OverlayService {
 
   Size _screen;
   Offset _centreShift;
+  int _rotation = 0;
   final StreamController<Size> _changes = StreamController<Size>.broadcast();
 
   bool active = true;
@@ -35,15 +36,20 @@ class FakeOverlayService implements OverlayService {
   Offset get centreShift => _centreShift;
 
   @override
+  int get rotation => _rotation;
+
+  @override
   Future<void> refreshScreen() async {}
 
   @override
   Stream<Size> get screenChanges => _changes.stream;
 
-  /// Rotate the phone: new screen size, same native window params.
-  void rotateTo(Size screen, {Offset centreShift = Offset.zero}) {
+  /// Rotate the phone: new screen size and rotation, same native window params.
+  void rotateTo(Size screen,
+      {Offset centreShift = Offset.zero, int rotation = 0}) {
     _screen = screen;
     _centreShift = centreShift;
+    _rotation = rotation;
     _changes.add(screen);
   }
 

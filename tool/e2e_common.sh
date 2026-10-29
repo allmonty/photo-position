@@ -1,7 +1,9 @@
 # Shared helpers for the Android end-to-end scripts. Source it; needs adb and
 # the debug app installed. Changes the device's rotation settings.
 PKG=com.example.photo_position
-TOL=2
+# The plugin takes whole dp for positions and the frame is parsed in px, so a
+# couple of px of rounding per rotation is expected (4px ~ 1.5dp).
+TOL=4
 tmp=$(mktemp -d)
 
 # Centre "x y" of the on-screen node whose content-desc is $1 (accessibility tree).
@@ -60,4 +62,38 @@ drag_overlay() {
   local cx=$(((f[0] + f[2]) / 2)) cy=$(((f[1] + f[3]) / 2))
   adb shell input swipe "$cx" "$cy" $((cx + $1)) $((cy + $2)) 600
   sleep 2
+}
+
+# Pixels per dp on the device (window geometry is parsed in px).
+px_per_dp() {
+  adb shell wm density | grep -o '[0-9]*$' | tail -1 | awk '{printf "%.4f", $1 / 160}'
+}
+
+# Natural (portrait) screen size in px, "W H".
+natural_size() {
+  adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1 | tr 'x' ' '
+}
+
+# "l t r b" (px) of the shape inside the overlay window: the window adds a
+# 20dp handle margin on every side and a 60dp control panel on the right.
+shape_rect() {
+  local f d
+  read -ra f <<<"$(overlay_frame)"
+  d=$(px_per_dp)
+  awk -v l="${f[0]}" -v t="${f[1]}" -v r="${f[2]}" -v b="${f[3]}" -v d="$d" \
+    'BEGIN { printf "%d %d %d %d", l + 20*d, t + 20*d, r - 80*d, b - 20*d }'
+}
+
+# Where portrait shape rect $1 ("l t r b") must be after turning the phone to
+# rotation $2 (Surface.ROTATION_*): the shape is pinned to the glass.
+expected_shape() {
+  local W H
+  read -r W H <<<"$(natural_size)"
+  awk -v s="$1" -v rot="$2" -v W="$W" -v H="$H" 'BEGIN {
+    split(s, a, " "); l = a[1]; t = a[2]; r = a[3]; b = a[4];
+    if (rot == 0) printf "%d %d %d %d", l, t, r, b;
+    else if (rot == 1) printf "%d %d %d %d", t, W - r, b, W - l;
+    else if (rot == 2) printf "%d %d %d %d", W - r, H - b, W - l, H - t;
+    else printf "%d %d %d %d", H - b, l, H - t, r;
+  }'
 }

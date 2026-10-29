@@ -88,4 +88,42 @@ void main() {
       g,
     );
   });
+
+  group('glass <-> display', () {
+    const natural = Size(400, 800);
+    const g = OverlayGeometry(
+        left: 20, top: 30, width: 100, height: 60, shape: OverlayShape.square);
+
+    test('rotation 0 is the identity', () {
+      expect(glassToDisplay(g, natural, 0), g);
+    });
+
+    test(
+        'a quarter turn counter-clockwise puts the glass top-left at the bottom-left',
+        () {
+      final d = glassToDisplay(g, natural, 1);
+      expect(d.rect, const Rect.fromLTWH(30, 280, 60, 100));
+    });
+
+    test(
+        'half a turn mirrors both axes; three quarters sends it to the top-right',
+        () {
+      expect(glassToDisplay(g, natural, 2).rect,
+          const Rect.fromLTWH(280, 710, 100, 60));
+      expect(glassToDisplay(g, natural, 3).rect,
+          const Rect.fromLTWH(710, 20, 60, 100));
+    });
+
+    test('displayToGlass inverts it for every rotation', () {
+      for (final r in [0, 1, 2, 3]) {
+        expect(displayToGlass(glassToDisplay(g, natural, r), natural, r), g);
+      }
+    });
+
+    test('naturalScreen undoes the rotation of the screen size', () {
+      expect(naturalScreen(const Size(800, 400), 1), natural);
+      expect(naturalScreen(const Size(800, 400), 3), natural);
+      expect(naturalScreen(natural, 2), natural);
+    });
+  });
 }

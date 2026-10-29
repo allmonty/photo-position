@@ -67,3 +67,44 @@ OverlayGeometry fromPluginOffset(
     shape: shape,
   );
 }
+
+/// The screen of the phone held in its natural (portrait) orientation, given
+/// the [screen] currently shown and the display [rotation].
+Size naturalScreen(Size screen, int rotation) =>
+    rotation.isOdd ? Size(screen.height, screen.width) : screen;
+
+/// Where the shape sits on the glass is stored in the phone's natural
+/// orientation ("glass" coordinates). [rotation] is Android's
+/// `Surface.ROTATION_*` quarter turns: 0 natural, 1 phone turned 90 degrees
+/// counter-clockwise, 2 upside down, 3 turned 90 degrees clockwise.
+///
+/// Returns the same physical spot as the display currently draws it. A
+/// circle stays a circle; a rectangle swaps width and height on odd
+/// rotations, exactly as the glass does when you turn the phone.
+OverlayGeometry glassToDisplay(OverlayGeometry g, Size natural, int rotation) {
+  final double w = natural.width;
+  final double h = natural.height;
+  final (double, double, double, double) r = switch (rotation % 4) {
+    1 => (g.top, w - g.left - g.width, g.height, g.width),
+    2 => (w - g.left - g.width, h - g.top - g.height, g.width, g.height),
+    3 => (h - g.top - g.height, g.left, g.height, g.width),
+    _ => (g.left, g.top, g.width, g.height),
+  };
+  return OverlayGeometry(
+      left: r.$1, top: r.$2, width: r.$3, height: r.$4, shape: g.shape);
+}
+
+/// Inverse of [glassToDisplay]: a rectangle edited on the rotated display,
+/// back to glass coordinates.
+OverlayGeometry displayToGlass(OverlayGeometry d, Size natural, int rotation) {
+  final double w = natural.width;
+  final double h = natural.height;
+  final (double, double, double, double) r = switch (rotation % 4) {
+    1 => (w - d.top - d.height, d.left, d.height, d.width),
+    2 => (w - d.left - d.width, h - d.top - d.height, d.width, d.height),
+    3 => (d.top, h - d.left - d.width, d.height, d.width),
+    _ => (d.left, d.top, d.width, d.height),
+  };
+  return OverlayGeometry(
+      left: r.$1, top: r.$2, width: r.$3, height: r.$4, shape: d.shape);
+}

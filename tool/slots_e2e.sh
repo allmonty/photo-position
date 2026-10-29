@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end slot check on a running Android emulator/device: position the
 # real overlay, save it to slots 1 and 2, move it away, then load each slot
-# and assert the overlay window returns to the saved frame (within 2 px).
+# and assert the overlay window returns to the saved frame (within TOL px).
 # Everything finer (clamping, overwrite, persistence) is unit-tested in
 # test/ui/slots_flow_test.dart.
 set -euo pipefail

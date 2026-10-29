@@ -14,6 +14,10 @@ abstract class OverlayService {
   /// Best-known screen size; changes are announced on [screenChanges].
   Size get screen;
 
+  /// Display rotation in quarter turns from the phone's natural orientation
+  /// (`Surface.ROTATION_*`, see `glassToDisplay`).
+  int get rotation;
+
   /// Parent-frame centre minus screen centre (see `toPluginOffset`).
   Offset get centreShift;
   Stream<Size> get screenChanges;
@@ -45,12 +49,16 @@ class PluginOverlayService implements OverlayService {
   final StreamController<Size> _changes = StreamController<Size>.broadcast();
   Size _screen;
   Offset _centreShift = Offset.zero;
+  int _rotation = 0;
 
   @override
   Size get screen => _screen;
 
   @override
   Offset get centreShift => _centreShift;
+
+  @override
+  int get rotation => _rotation;
 
   @override
   Stream<Size> get screenChanges => _changes.stream;
@@ -65,6 +73,7 @@ class PluginOverlayService implements OverlayService {
     double n(String k) => (args[k]! as num).toDouble();
     _screen = Size(n('width'), n('height'));
     _centreShift = Offset(n('shiftX'), n('shiftY'));
+    _rotation = (args['rotation'] as num?)?.toInt() ?? 0;
   }
 
   @override

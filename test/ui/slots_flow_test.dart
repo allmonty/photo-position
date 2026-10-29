@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
@@ -92,18 +93,20 @@ void main() {
         service.visibleRect.topLeft + const Offset(20, 20), savedRect.topLeft);
   });
 
-  test('a slot saved in portrait loads clamped into landscape', () async {
+  test(
+      'a slot saved in portrait lands on the same part of the glass in landscape',
+      () async {
     await dragTo(const Offset(0, 250)); // low on the portrait screen
     await slots.saveCurrentTo(0);
+    final glass = slots.slots[0]!.geometry;
 
-    service.rotateTo(landscape);
+    service.rotateTo(landscape, rotation: 1);
     await Future<void>.delayed(Duration.zero);
     await overlay.loadPosition((await slots.select(0))!);
 
-    final shown = overlay.geometry!.rect;
-    expect(shown.bottom, lessThanOrEqualTo(400));
-    expect(shown.right, lessThanOrEqualTo(800));
-    expect(shown.top, greaterThanOrEqualTo(0));
+    expect(overlay.geometry, glassToDisplay(glass, portrait, 1));
+    expect(slots.slots[0]!.geometry, glass,
+        reason: 'the slot itself is unchanged');
   });
 
   test('slots survive restarting the overlay', () async {

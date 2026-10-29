@@ -22,6 +22,10 @@ import io.flutter.plugin.common.MethodChannel
  * caches under [OVERLAY_ENGINE_TAG]. Dart can pull ("getScreen", used at
  * start) and is pushed ("screenChanged") on every configuration change.
  *
+ * `rotation` is the display rotation in quarter turns from the phone's natural
+ * orientation (`Surface.ROTATION_*`): the overlay is pinned to the glass, so
+ * Dart needs it to know which way the phone is turned.
+ *
  * `shiftX/shiftY` is where the centre of the window's parent frame lies
  * relative to the screen centre: the plugin positions its `Gravity.CENTER`
  * window against a parent that excludes the navigation bar, so the shift
@@ -87,7 +91,10 @@ class ScreenSizeBridge : BroadcastReceiver() {
                 w = m.widthPixels
                 h = m.heightPixels
             }
+            @Suppress("DEPRECATION")
+            val rotation = wm.defaultDisplay.rotation
             return mapOf(
+                "rotation" to rotation.toDouble(),
                 "width" to w / density,
                 "height" to h / density,
                 "shiftX" to shiftX / density,
