@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
+import 'package:photo_position/main.dart';
 import 'package:photo_position/theme.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
 import 'package:photo_position/ui/home/widgets/slot_thumbnail.dart';
@@ -84,5 +85,21 @@ void main() {
       home: Center(child: SlotThumbnail(slot: current, height: 200)),
     ));
     expect(tester.getSize(find.byType(SlotThumbnail)), const Size(100, 200));
+  });
+
+  testWidgets('home screen shows the saved positions', (tester) async {
+    repo.slots[1] = current;
+    await tester.pumpWidget(MaterialApp(
+      theme: artDecoTheme,
+      home: HomeScreen(repository: repo),
+    ));
+    await tester.pump();
+    await tester.dragUntilVisible(
+      find.byType(SlotThumbnail).first,
+      find.byType(SingleChildScrollView),
+      const Offset(0, -100),
+    );
+    expect(find.byType(SlotThumbnail), findsNWidgets(3));
+    expect(find.text('SAVED POSITIONS'), findsOneWidget);
   });
 }

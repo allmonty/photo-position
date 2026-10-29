@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -7,7 +8,10 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:photo_position/data/repositories/position_repository.dart';
 import 'package:photo_position/data/services/overlay_service.dart';
+import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
+import 'package:photo_position/ui/home/widgets/slots_section.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
 import 'package:photo_position/ui/overlay/widgets/overlay_screen.dart';
 
@@ -51,13 +55,23 @@ class PhotoPositionApp extends StatelessWidget {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.repository});
+
+  /// Where positions are stored; defaults to shared_preferences.
+  final PositionRepository? repository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  late final SlotsViewModel _slots = SlotsViewModel(
+    repository: widget.repository ?? SharedPreferencesPositionRepository(),
+    screen: () {
+      final FlutterView v = PlatformDispatcher.instance.views.first;
+      return v.physicalSize / v.devicePixelRatio;
+    },
+  );
   bool _isOverlayActive = false;
 
   final String _portName = "photo_position_overlay_port";
@@ -156,7 +170,33 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startBackgroundIsolate();
+    unawaited(_slots.load());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _slots.dispose();
+    super.dispose();
+  }
+
+  // The overlay keeps saving its position while this app is in the
+  // background; reload so "save to slot" copies the latest one.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_slots.load());
+  }
+
+  /// A slot became the current position; a running overlay moves there now,
+  /// a stopped one will open there.
+  Future<void> _moveOverlayTo(PositionSlot slot) async {
+    if (!_isOverlayActive) return;
+    await FlutterOverlayWindow.shareData({
+      'action': 'load_position',
+      'slot': slot.toJson(),
+    });
   }
 
   // The overlay runs in its own Flutter engine and doesn't share Dart state
@@ -253,6 +293,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 const SizedBox(height: 32),
+                const _ArtDecoDivider(),
+                const SizedBox(height: 24),
+                Text(
+                  'SAVED POSITIONS',
+                  style: GoogleFonts.poiretOne(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 14 * 0.1,
+                    color: kGold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SlotsSection(viewModel: _slots, onSelect: _moveOverlayTo),
+                const SizedBox(height: 24),
                 const _ArtDecoDivider(),
                 const SizedBox(height: 24),
                 Text(

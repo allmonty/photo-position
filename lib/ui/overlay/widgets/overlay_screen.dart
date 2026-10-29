@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/theme.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
 
@@ -49,8 +50,14 @@ class _OverlayScreenState extends State<OverlayScreen> {
     unawaited(_vm.start());
     if (widget.listenForMainApp) {
       _messages = FlutterOverlayWindow.overlayListener.listen((dynamic event) {
-        if (event is Map && event['action'] == 'close_overlay_and_reset') {
+        if (event is! Map) return;
+        if (event['action'] == 'close_overlay_and_reset') {
           unawaited(_close());
+        } else if (event['action'] == 'load_position') {
+          final PositionSlot? slot = PositionSlot.fromJson(
+            Map<String, dynamic>.from(event['slot'] as Map<Object?, Object?>),
+          );
+          if (slot != null) unawaited(_vm.loadPosition(slot));
         }
       });
     }
