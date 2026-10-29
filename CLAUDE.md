@@ -1,44 +1,67 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) working in this repository. Longer notes: [docs/developer-guide.md](docs/developer-guide.md); why things are the way they are: [docs/decisions.md](docs/decisions.md).
 
 ## Commands
 
 ```bash
-flutter pub get                  # install dependencies
-flutter run                      # run on connected device/emulator
-flutter analyze                  # lint/static analysis (rules in analysis_options.yaml)
-flutter test                     # run all tests
-flutter test test/overlay_position_test.dart   # run a single test file
-flutter build apk --release      # build release APK
-flutter build appbundle --release
+flutter pub get                       # install dependencies
+flutter analyze                       # lint (strict modes, see analysis_options.yaml)
+flutter test                          # unit + widget tests
+dart format --output=none --set-exit-if-changed lib test testing integration_test
+flutter test integration_test -d <device-id>    # real display rotation: Android emulator or iOS simulator
+tool/rotation_e2e.sh                  # Android only: real overlay window across rotations (needs adb + app installed)
+tool/slots_e2e.sh                     # Android only: save two slots, load them, window returns to the saved frame
+flutter run                           # run on a device/emulator
+flutter build apk --release
 ```
 
-There is no separate lint command beyond `flutter analyze`; `flutter_lints` rules are configured in `analysis_options.yaml`.
+Android builds need a JDK Gradle 9.1 supports (the project builds with Android Studio's JDK 25). Do not install tools or change global config without asking the user.
 
 ## Architecture
 
-This is a **Flutter, Android-only** app (`flutter_overlay_window` is Android-only; iOS restricts system overlays) that draws a draggable circle/square overlay on top of other apps (e.g. camera) to help align photos.
+**Flutter; the overlay is Android-only, iOS runs the shared logic and home screen** (`flutter_overlay_window` is Android-only). Two Flutter engines run in one process: the main app (`main()` -> `HomeScreen`) and the overlay window (`overlayMain()` -> `OverlayScreen`, a separate entry point annotated `@pragma("vm:entry-point")`).
 
-### Two-instance model
+```
+lib/
+  main.dart                    the two entry points only (main, overlayMain)
+  config/dependencies.dart     the one place that picks implementations (tests override them)
+  domain/                      pure Dart: OverlayGeometry, PositionSlot, geometry.dart (plugin-offset maths)
+  data/repositories/           PositionRepository (+ shared_preferences impl)
+  data/services/               OverlayService (overlay side: window, screen size), OverlayHost (main-app side: permission, show, messages)
+  ui/core/                     theme, Art Deco widgets
+  ui/overlay/{view_models,widgets}/   OverlayViewModel, OverlayScreen
+  ui/home/{view_models,widgets}/      HomeViewModel, SlotsViewModel, HomeScreen, SlotsSection, SlotThumbnail
+testing/fakes/                 FakeOverlayService (behaves like the native window), FakeOverlayHost, MemoryPositionRepository
+android/.../ScreenSizeBridge.kt, PhotoPositionApplication.kt, MainActivity.kt   native screen-size bridge
+```
 
-The app runs as two separate Flutter instances within the same process, distinguished by `FlutterOverlayWindow.isActive()` in [lib/main.dart](lib/main.dart):
+Dependencies point one way: widgets -> view models -> repositories/services -> domain. View models take their dependencies in the constructor so tests pass fakes. State uses `ChangeNotifier` + `ListenableBuilder` (no `provider`).
 
-- **Main app** — `main()` entry point → `PhotoPositionApp` → `HomeScreen` ([lib/main.dart](lib/main.dart)). Requests `SYSTEM_ALERT_WINDOW` permission and starts/stops the overlay via `FlutterOverlayWindow.showOverlay()`.
-- **Overlay window** — `overlayMain()`, a separate VM entry point annotated `@pragma("vm:entry-point")`, runs `OverlayScreen` ([lib/overlay_screen.dart](lib/overlay_screen.dart)) in its own Flutter engine, rendered above all other apps.
+### Position model (the important part)
 
-### Cross-isolate communication
+The overlay's position is one absolute rectangle, `OverlayGeometry` (dp from the screen's top-left). `OverlayViewModel._apply` is the only place that pushes it to the native window, via `toPluginOffset`. Rotation re-applies the same rectangle; nothing is transposed. If the rectangle no longer fits the screen it is shown clamped, but the stored value is not changed, so rotating back is exact.
 
-The main app and overlay instance communicate via `ReceivePort` + `IsolateNameServer` (port name `"photo_position_overlay_port"`), not via shared Dart state — e.g. the overlay sends `{'action': 'close_overlay'}` to tell the main app it closed.
+Two non-obvious facts about the plugin, both verified on a device:
+- The window is `Gravity.CENTER`: its x/y is the offset of the window centre from the centre of its **parent frame**, which excludes the navigation bar (`centreShift`).
+- The overlay engine's `Display.size` never updates after rotation. `ScreenSizeBridge.kt` pushes (`screenChanged`) and answers (`getScreen`) the real size over channel `photo_position/screen`. Plugin calls made before its channel exists throw `MissingPluginException`; `PluginOverlayService` retries them.
 
-### Overlay state and persistence
+### Cross-engine communication
 
-`OverlayScreen` owns shape (circle/square), size, drag position, and controls-visibility state. Position/size are persisted across overlay restarts using `shared_preferences` (`SharedPreferences.getInstance()`), saved on resize/drag end and on close, and restored in `_restoreOverlayPosition()`.
+`IsolateNameServer` port `photo_position_overlay_port` (overlay -> main: `close_overlay`; owned by `PluginOverlayHost`), `FlutterOverlayWindow.shareData` (main -> overlay: `close_overlay_and_reset`, `load_position`), and shared_preferences (the overlay writes the current position; the main app `reload()`s before reading).
 
-### Rotation handling
+### Slots
 
-`sensors_plus`' `accelerometerEventStream()` is used in [lib/overlay_screen.dart](lib/overlay_screen.dart) to detect device orientation changes, triggering `_transposeOverlayPosition()` to remap the saved overlay position/size around the screen center so the overlay stays correctly placed after a rotation (recent/active area of work — see git log for `fix rotation` commits).
+Three `PositionSlot`s (geometry + the screen size it was saved on) are copied from/to the persisted current position on the home screen. Loading a slot into a different orientation clamps it into the screen.
 
-### Resize/drag interactions
+## Testing
 
-Resizing is implemented via three independent drag handlers in `OverlayScreen`: horizontal resize, vertical resize, and circle (diagonal) resize, each with its own start/update/end methods that mutate size state and persist via `shared_preferences` on end.
+| Where | What |
+|---|---|
+| `test/domain` | plugin-offset maths, JSON validation, clamping |
+| `test/data` | repository (incl. legacy-key migration), native-bridge channel |
+| `test/ui/overlay` | rotation invariance with `FakeOverlayService`, widget gestures |
+| `test/ui/home` | home/slots view models, home screen, slot section, thumbnail |
+| `test/ui/slots_flow_test.dart` | overlay persists -> slots copy -> loading moves the overlay (one repository) |
+| `integration_test` | real display rotation on a device/simulator |
+| `tool/rotation_e2e.sh`, `tool/slots_e2e.sh` | real overlay window frame before/after rotating, and after loading a slot (Android) |

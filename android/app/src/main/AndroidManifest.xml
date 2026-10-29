@@ -6,7 +6,7 @@
     
     <application
         android:label="photo_position"
-        android:name="${applicationName}"
+        android:name=".PhotoPositionApplication"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
