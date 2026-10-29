@@ -12,4 +12,4 @@ Append-only. A later entry that replaces an earlier one says so.
 | 6 | 2026-10-29 | Three slots, managed on the home screen only; each stores the screen it was saved on. | Chosen by the user; the screen size lets the thumbnail draw the right phone and loading in another orientation clamp. |
 | 7 | 2026-10-29 | `ChangeNotifier` + `ListenableBuilder`, no `provider`. | Two small view models; a dependency is not worth it. |
 | 8 | 2026-10-29 | Gradle 9.1.0 / AGP 8.13.0. | Android Studio's JDK is 25, which Gradle 8.14 does not support. |
-| 9 | 2026-10-29 | The overlay window is not tested on iOS. | `flutter_overlay_window` is Android-only; only the shared Dart logic and UI run there. |
+| 9 | 2026-10-29 | The overlay window is not tested on iOS. | `flutter_overlay_window` is Android-only; only the shared Dart logic and UI could run there, and the project has no `ios/` folder yet. |
