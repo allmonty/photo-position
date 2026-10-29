@@ -87,10 +87,12 @@ class OverlayViewModel extends ChangeNotifier {
   /// Call when a native drag ends: the plugin moved the window, so read the
   /// new position back into [geometry].
   Future<void> dragEnded() async {
-    final OverlayGeometry? g = _geometry;
-    if (g == null || _closed) return;
+    if (_geometry == null || _closed) return;
     await _pending;
     final Offset pos = await _service.getPosition();
+    // Re-read after the awaits: a tap on the shape toggle also ends with a
+    // pointer-up, and must not be overwritten with the shape from before it.
+    final OverlayGeometry g = _geometry!;
     _geometry = fromPluginOffset(
       pos,
       _service.screen,

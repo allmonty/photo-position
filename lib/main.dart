@@ -4,9 +4,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:photo_position/overlay_screen.dart';
+import 'package:photo_position/data/repositories/position_repository.dart';
+import 'package:photo_position/data/services/overlay_service.dart';
 import 'package:photo_position/theme.dart';
+import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
+import 'package:photo_position/ui/overlay/widgets/overlay_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +26,12 @@ void overlayMain() {
     MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: artDecoTheme,
-      home: const OverlayScreen(),
+      home: OverlayScreen(
+        viewModel: OverlayViewModel(
+          service: PluginOverlayService(),
+          repository: SharedPreferencesPositionRepository(),
+        ),
+      ),
     ),
   );
 }
