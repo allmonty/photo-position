@@ -16,8 +16,9 @@ void main() {
   test('current geometry round-trips; empty storage gives null', () async {
     final repo = SharedPreferencesPositionRepository();
     expect(await repo.loadCurrent(screen: screen), isNull);
-    await repo.saveCurrent(g);
-    expect(await repo.loadCurrent(screen: screen), g);
+    const saved = PositionSlot(geometry: g, screen: screen);
+    await repo.saveCurrent(saved);
+    expect(await repo.loadCurrent(screen: screen), saved);
   });
 
   test('corrupt stored json is ignored', () async {
@@ -51,7 +52,7 @@ void main() {
     final migrated =
         await SharedPreferencesPositionRepository().loadCurrent(screen: screen);
     expect(
-      migrated,
+      migrated?.geometry,
       const OverlayGeometry(
           left: 100,
           top: 150,

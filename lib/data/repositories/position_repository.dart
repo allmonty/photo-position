@@ -12,10 +12,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class PositionRepository {
   static const int slotCount = 3;
 
-  /// Last overlay geometry, or null if none was ever saved. [screen] is only
-  /// needed to migrate the pre-slots storage format.
-  Future<OverlayGeometry?> loadCurrent({required Size screen});
-  Future<void> saveCurrent(OverlayGeometry geometry);
+  /// Last overlay position with the screen it was on, or null if none was
+  /// ever saved. The screen is what lets a slot taken from it draw the phone
+  /// with the right proportions. [screen] is only used to migrate the
+  /// pre-slots storage format.
+  Future<PositionSlot?> loadCurrent({required Size screen});
+  Future<void> saveCurrent(PositionSlot position);
 
   /// Always [slotCount] entries; null means empty.
   Future<List<PositionSlot?>> loadSlots();
@@ -27,24 +29,27 @@ class SharedPreferencesPositionRepository implements PositionRepository {
   static String _slotKey(int i) => 'positionSlot$i';
 
   @override
-  Future<OverlayGeometry?> loadCurrent({required Size screen}) async {
+  Future<PositionSlot?> loadCurrent({required Size screen}) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return _decode<OverlayGeometry>(
+    // The overlay writes from another Flutter engine; drop this isolate's cache.
+    await prefs.reload();
+    return _decode<PositionSlot>(
           prefs.getString(_currentKey),
-          OverlayGeometry.fromJson,
+          PositionSlot.fromJson,
         ) ??
         _migrateLegacy(prefs, screen);
   }
 
   @override
-  Future<void> saveCurrent(OverlayGeometry geometry) async {
+  Future<void> saveCurrent(PositionSlot position) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_currentKey, jsonEncode(geometry.toJson()));
+    await prefs.setString(_currentKey, jsonEncode(position.toJson()));
   }
 
   @override
   Future<List<PositionSlot?>> loadSlots() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
     return [
       for (var i = 0; i < PositionRepository.slotCount; i++)
         _decode<PositionSlot>(
@@ -75,7 +80,7 @@ class SharedPreferencesPositionRepository implements PositionRepository {
 
   /// Old format: centre-relative window offset (`overlayWinsPosX/Y`) plus
   /// separate size/shape keys. Converted once to the absolute rectangle.
-  static OverlayGeometry? _migrateLegacy(SharedPreferences prefs, Size screen) {
+  static PositionSlot? _migrateLegacy(SharedPreferences prefs, Size screen) {
     final double? x = prefs.getDouble('overlayWinsPosX');
     final double? y = prefs.getDouble('overlayWinsPosY');
     if (x == null || y == null) return null;
@@ -84,12 +89,15 @@ class SharedPreferencesPositionRepository implements PositionRepository {
     final double size = prefs.getDouble('overlayCircleSize') ?? 200;
     final double w = circle ? size : prefs.getDouble('overlayWidth') ?? 200;
     final double h = circle ? size : prefs.getDouble('overlayHeight') ?? 200;
-    return fromPluginOffset(
-      Offset(x, y),
-      screen,
-      width: w.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
-      height: h.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
-      shape: circle ? OverlayShape.circle : OverlayShape.square,
+    return PositionSlot(
+      geometry: fromPluginOffset(
+        Offset(x, y),
+        screen,
+        width: w.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
+        height: h.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
+        shape: circle ? OverlayShape.circle : OverlayShape.square,
+      ),
+      screen: screen,
     );
   }
 }
