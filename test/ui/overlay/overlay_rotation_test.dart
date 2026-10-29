@@ -137,4 +137,12 @@ void main() {
     await started;
     expect(service.moveCalls, 1);
   });
+
+  test('a failed apply does not block the next one', () async {
+    service.failNextResize = true;
+    await vm.start();
+    service.rotateTo(landscape);
+    await settle();
+    expect(shapeOnScreen(service, vm), vm.geometry!.rect);
+  });
 }

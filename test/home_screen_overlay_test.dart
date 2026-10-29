@@ -22,8 +22,7 @@ void main() {
 
   testWidgets(
       'Starting the overlay (permission already granted) calls showOverlay '
-      'and shares the port name',
-      (WidgetTester tester) async {
+      'and shares the port name', (WidgetTester tester) async {
     final log = <MethodCall>[];
     mockOverlayChannel(tester, (call) {
       log.add(call);
@@ -57,8 +56,7 @@ void main() {
 
   testWidgets(
       'Starting the overlay without permission requests it instead of '
-      'showing the overlay',
-      (WidgetTester tester) async {
+      'showing the overlay', (WidgetTester tester) async {
     final log = <MethodCall>[];
     mockOverlayChannel(tester, (call) {
       log.add(call);
@@ -82,8 +80,7 @@ void main() {
 
   testWidgets(
       'Stopping the overlay sends the close action and returns to the '
-      'idle UI',
-      (WidgetTester tester) async {
+      'idle UI', (WidgetTester tester) async {
     mockOverlayChannel(tester, (call) {
       return const {'checkPermission': true, 'showOverlay': true};
     });

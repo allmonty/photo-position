@@ -71,9 +71,13 @@ class OverlayViewModel extends ChangeNotifier {
   Future<void> _apply() => _pending = _pending.then((_) async {
         final OverlayGeometry? g = _geometry;
         if (g == null || _closed) return;
-        final Size screen = _service.screen;
-        await _service.resize(windowSizeFor(g), enableDrag: !_isResizing);
-        await _service.move(toPluginOffset(g, screen));
+        try {
+          await _service.resize(windowSizeFor(g), enableDrag: !_isResizing);
+          await _service.move(toPluginOffset(g, _service.screen));
+        } on Object catch (e) {
+          // Must not escape: a failed future would poison every later apply.
+          debugPrint('Applying overlay geometry failed: $e');
+        }
       });
 
   Future<void> _persist() async {

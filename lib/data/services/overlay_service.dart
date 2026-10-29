@@ -57,12 +57,27 @@ class PluginOverlayService implements OverlayService {
     return d.size / d.devicePixelRatio;
   }
 
+  /// The plugin registers its channel in the overlay engine only after
+  /// `overlayMain` has started running, so early calls throw
+  /// [MissingPluginException]; retry until it is there.
+  static Future<T> _whenReady<T>(Future<T> Function() call) async {
+    for (var i = 0;; i++) {
+      try {
+        return await call();
+      } on MissingPluginException {
+        if (i >= 30) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+    }
+  }
+
   @override
-  Future<bool> isActive() => FlutterOverlayWindow.isActive();
+  Future<bool> isActive() => _whenReady(FlutterOverlayWindow.isActive);
 
   @override
   Future<Offset> getPosition() async {
-    final OverlayPosition p = await FlutterOverlayWindow.getOverlayPosition();
+    final OverlayPosition p =
+        await _whenReady(FlutterOverlayWindow.getOverlayPosition);
     return Offset(p.x, p.y);
   }
 
@@ -82,6 +97,6 @@ class PluginOverlayService implements OverlayService {
 
   @override
   Future<void> close() async {
-    await FlutterOverlayWindow.closeOverlay();
+    await _whenReady(FlutterOverlayWindow.closeOverlay);
   }
 }

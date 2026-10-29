@@ -12,8 +12,7 @@ class MemoryPositionRepository implements PositionRepository {
   Future<PositionSlot?> loadCurrent({required Size screen}) async => current;
 
   @override
-  Future<void> saveCurrent(PositionSlot position) async =>
-      current = position;
+  Future<void> saveCurrent(PositionSlot position) async => current = position;
 
   @override
   Future<List<PositionSlot?>> loadSlots() async => List.of(slots);

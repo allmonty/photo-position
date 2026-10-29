@@ -39,30 +39,30 @@ const artDecoColorScheme = ColorScheme(
 );
 
 final ThemeData artDecoTheme = ThemeData(
-    colorScheme: artDecoColorScheme,
-    useMaterial3: true,
-    scaffoldBackgroundColor: kCrimson,
-    appBarTheme: AppBarTheme(
-      backgroundColor: kCrimsonDark,
-      foregroundColor: kGold,
-      centerTitle: true,
-      titleTextStyle: GoogleFonts.poiretOne(
-        fontSize: 20,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 20 * 0.05,
-        color: kGold,
-      ),
-      elevation: 0,
-    ),
-    dividerTheme: const DividerThemeData(
+  colorScheme: artDecoColorScheme,
+  useMaterial3: true,
+  scaffoldBackgroundColor: kCrimson,
+  appBarTheme: AppBarTheme(
+    backgroundColor: kCrimsonDark,
+    foregroundColor: kGold,
+    centerTitle: true,
+    titleTextStyle: GoogleFonts.poiretOne(
+      fontSize: 20,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 20 * 0.05,
       color: kGold,
-      thickness: 1,
     ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: kCrimsonMid,
-      contentTextStyle: GoogleFonts.libreFranklin(
-        color: kOnSurface,
-        fontSize: 14,
-      ),
+    elevation: 0,
+  ),
+  dividerTheme: const DividerThemeData(
+    color: kGold,
+    thickness: 1,
+  ),
+  snackBarTheme: SnackBarThemeData(
+    backgroundColor: kCrimsonMid,
+    contentTextStyle: GoogleFonts.libreFranklin(
+      color: kOnSurface,
+      fontSize: 14,
     ),
-  );
+  ),
+);

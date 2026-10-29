@@ -21,6 +21,9 @@ class FakeOverlayService implements OverlayService {
   bool dragEnabled = true;
   int moveCalls = 0;
 
+  /// Makes the next [resize] throw, like the plugin before its channel exists.
+  bool failNextResize = false;
+
   @override
   Size get screen => _screen;
 
@@ -58,6 +61,10 @@ class FakeOverlayService implements OverlayService {
 
   @override
   Future<void> resize(Size window, {required bool enableDrag}) async {
+    if (failNextResize) {
+      failNextResize = false;
+      throw StateError('plugin not ready');
+    }
     this.window = window;
     dragEnabled = enableDrag;
   }
