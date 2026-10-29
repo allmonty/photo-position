@@ -18,6 +18,10 @@ void main() {
       const MethodChannel('x-slayer/overlay_channel'),
       (MethodCall call) async => responses(call)[call.method],
     );
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('photo_position/host'),
+      (MethodCall call) async => null,
+    );
   }
 
   testWidgets(

@@ -9,9 +9,13 @@ import 'package:photo_position/data/services/overlay_service.dart';
 /// stored offset alone -- which is exactly the situation that used to make
 /// the overlay jump.
 class FakeOverlayService implements OverlayService {
-  FakeOverlayService({Size screen = const Size(400, 800)}) : _screen = screen;
+  FakeOverlayService(
+      {Size screen = const Size(400, 800), Offset centreShift = Offset.zero})
+      : _screen = screen,
+        _centreShift = centreShift;
 
   Size _screen;
+  Offset _centreShift;
   final StreamController<Size> _changes = StreamController<Size>.broadcast();
 
   bool active = true;
@@ -28,18 +32,25 @@ class FakeOverlayService implements OverlayService {
   Size get screen => _screen;
 
   @override
+  Offset get centreShift => _centreShift;
+
+  @override
+  Future<void> refreshScreen() async {}
+
+  @override
   Stream<Size> get screenChanges => _changes.stream;
 
   /// Rotate the phone: new screen size, same native window params.
-  void rotateTo(Size screen) {
+  void rotateTo(Size screen, {Offset centreShift = Offset.zero}) {
     _screen = screen;
+    _centreShift = centreShift;
     _changes.add(screen);
   }
 
   /// The window's top-left on screen, as the WindowManager would place it.
   Rect get visibleRect => Rect.fromLTWH(
-        offset.dx + _screen.width / 2 - window.width / 2,
-        offset.dy + _screen.height / 2 - window.height / 2,
+        offset.dx + _centreShift.dx + _screen.width / 2 - window.width / 2,
+        offset.dy + _centreShift.dy + _screen.height / 2 - window.height / 2,
         window.width,
         window.height,
       );

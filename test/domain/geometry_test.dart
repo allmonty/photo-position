@@ -77,4 +77,15 @@ void main() {
           const Rect.fromLTWH(300, 300, 100, 100));
     });
   });
+
+  test('the parent-frame centre shift is subtracted and added back', () {
+    const shift = Offset(0, -12);
+    final offset = toPluginOffset(g, portrait, centreShift: shift);
+    expect(offset, toPluginOffset(g, portrait) - shift);
+    expect(
+      fromPluginOffset(offset, portrait,
+          centreShift: shift, width: g.width, height: g.height, shape: g.shape),
+      g,
+    );
+  });
 }

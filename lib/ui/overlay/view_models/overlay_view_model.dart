@@ -33,23 +33,32 @@ class OverlayViewModel extends ChangeNotifier {
   final Duration activePollInterval;
   late final StreamSubscription<Size> _screenSub;
 
-  OverlayGeometry? _geometry;
+  OverlayGeometry? _stored;
   bool _showControls = true;
   bool _isResizing = false;
   bool _closed = false;
   OverlayGeometry? _resizeStart;
   Future<void> _pending = Future<void>.value();
 
+  /// What is shown now: the stored rectangle, pulled onto the current screen
+  /// if it no longer fits (e.g. placed low in portrait, then rotated to a
+  /// landscape screen that is shorter). The stored value itself is not
+  /// changed by rotation, so rotating back restores the exact original.
   /// Null until [start] has loaded or created one.
-  OverlayGeometry? get geometry => _geometry;
+  OverlayGeometry? get geometry => _stored?.clampedTo(_service.screen);
   bool get showControls => _showControls;
   bool get isResizing => _isResizing;
   bool get closed => _closed;
 
   Future<void> start() async {
+    try {
+      await _service.refreshScreen();
+    } on Object catch (e) {
+      debugPrint('Using the engine\'s own screen size: $e');
+    }
     final PositionSlot? saved =
         await _repository.loadCurrent(screen: _service.screen);
-    _geometry = saved?.geometry.clampedTo(_service.screen) ??
+    _stored = saved?.geometry ??
         OverlayGeometry(
           left: (_service.screen.width - 200) / 2,
           top: (_service.screen.height - 200) / 2,
@@ -69,11 +78,12 @@ class OverlayViewModel extends ChangeNotifier {
 
   /// Serialised so a rotation arriving mid-resize cannot interleave with it.
   Future<void> _apply() => _pending = _pending.then((_) async {
-        final OverlayGeometry? g = _geometry;
+        final OverlayGeometry? g = geometry;
         if (g == null || _closed) return;
         try {
           await _service.resize(windowSizeFor(g), enableDrag: !_isResizing);
-          await _service.move(toPluginOffset(g, _service.screen));
+          await _service.move(toPluginOffset(g, _service.screen,
+              centreShift: _service.centreShift));
         } on Object catch (e) {
           // Must not escape: a failed future would poison every later apply.
           debugPrint('Applying overlay geometry failed: $e');
@@ -81,7 +91,7 @@ class OverlayViewModel extends ChangeNotifier {
       });
 
   Future<void> _persist() async {
-    final OverlayGeometry? g = _geometry;
+    final OverlayGeometry? g = geometry;
     if (g != null) {
       await _repository
           .saveCurrent(PositionSlot(geometry: g, screen: _service.screen));
@@ -91,15 +101,16 @@ class OverlayViewModel extends ChangeNotifier {
   /// Call when a native drag ends: the plugin moved the window, so read the
   /// new position back into [geometry].
   Future<void> dragEnded() async {
-    if (_geometry == null || _closed) return;
+    if (_stored == null || _closed) return;
     await _pending;
     final Offset pos = await _service.getPosition();
     // Re-read after the awaits: a tap on the shape toggle also ends with a
     // pointer-up, and must not be overwritten with the shape from before it.
-    final OverlayGeometry g = _geometry!;
-    _geometry = fromPluginOffset(
+    final OverlayGeometry g = geometry!;
+    _stored = fromPluginOffset(
       pos,
       _service.screen,
+      centreShift: _service.centreShift,
       width: g.width,
       height: g.height,
       shape: g.shape,
@@ -109,7 +120,7 @@ class OverlayViewModel extends ChangeNotifier {
   }
 
   void beginResize() {
-    _resizeStart = _geometry;
+    _resizeStart = geometry;
     _isResizing = true;
     notifyListeners();
     unawaited(_apply());
@@ -122,7 +133,7 @@ class OverlayViewModel extends ChangeNotifier {
     if (s == null) return;
     double clamp(double v) =>
         v.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize);
-    _geometry = OverlayGeometry(
+    _stored = OverlayGeometry(
       left: s.left,
       top: s.top,
       width: axis == ResizeAxis.height ? s.width : clamp(s.width + delta),
@@ -142,10 +153,10 @@ class OverlayViewModel extends ChangeNotifier {
   }
 
   Future<void> toggleShape() async {
-    final OverlayGeometry g = _geometry!;
+    final OverlayGeometry g = geometry!;
     final bool toCircle = g.shape == OverlayShape.square;
     final double side = min(g.width, g.height);
-    _geometry = OverlayGeometry(
+    _stored = OverlayGeometry(
       left: g.left,
       top: g.top,
       width: toCircle ? side : g.width,
@@ -165,7 +176,7 @@ class OverlayViewModel extends ChangeNotifier {
   /// Moves the overlay to a saved position. The slot may come from another
   /// orientation, so it is clamped into the current screen instead of rotated.
   Future<void> loadPosition(PositionSlot slot) async {
-    _geometry = slot.geometry.clampedTo(_service.screen);
+    _stored = slot.geometry;
     notifyListeners();
     await _apply();
     await _persist();

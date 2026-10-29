@@ -13,7 +13,14 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 abstract class OverlayService {
   /// Best-known screen size; changes are announced on [screenChanges].
   Size get screen;
+
+  /// Parent-frame centre minus screen centre (see `toPluginOffset`).
+  Offset get centreShift;
   Stream<Size> get screenChanges;
+
+  /// Asks the native side for the current [screen]/[centreShift], which the
+  /// overlay engine cannot work out itself.
+  Future<void> refreshScreen();
 
   Future<bool> isActive();
   Future<Offset> getPosition();
@@ -37,19 +44,35 @@ class PluginOverlayService implements OverlayService {
 
   final StreamController<Size> _changes = StreamController<Size>.broadcast();
   Size _screen;
+  Offset _centreShift = Offset.zero;
 
   @override
   Size get screen => _screen;
+
+  @override
+  Offset get centreShift => _centreShift;
 
   @override
   Stream<Size> get screenChanges => _changes.stream;
 
   Future<void> _onCall(MethodCall call) async {
     if (call.method != 'screenChanged') return;
-    final Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    _screen = Size((args['width']! as num).toDouble(),
-        (args['height']! as num).toDouble());
+    _update(call.arguments as Map<Object?, Object?>);
     _changes.add(_screen);
+  }
+
+  void _update(Map<Object?, Object?> args) {
+    double n(String k) => (args[k]! as num).toDouble();
+    _screen = Size(n('width'), n('height'));
+    _centreShift = Offset(n('shiftX'), n('shiftY'));
+  }
+
+  @override
+  Future<void> refreshScreen() async {
+    final Map<Object?, Object?>? reply = await _whenReady(
+      () => _channel.invokeMapMethod<Object?, Object?>('getScreen'),
+    );
+    if (reply != null) _update(reply);
   }
 
   static Size _displaySize() {

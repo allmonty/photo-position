@@ -19,14 +19,21 @@ Size windowSizeFor(OverlayGeometry g) => Size(
 /// The offset `flutter_overlay_window` expects for [g] on [screen].
 ///
 /// The plugin's window uses `Gravity.CENTER`, so its x/y is the distance
-/// from the screen centre to the window centre -- not from the corner.
-Offset toPluginOffset(OverlayGeometry g, Size screen) {
+/// from the centre of the window's *parent frame* to the window centre --
+/// not from the screen corner. The parent frame excludes the navigation
+/// bar, so its centre is [centreShift] away from the screen centre (always
+/// zero-sized on devices without a navigation bar).
+Offset toPluginOffset(
+  OverlayGeometry g,
+  Size screen, {
+  Offset centreShift = Offset.zero,
+}) {
   final Size window = windowSizeFor(g);
   final double windowLeft = g.left - resizeHandleSize;
   final double windowTop = g.top - resizeHandleSize;
   return Offset(
-    windowLeft + window.width / 2 - screen.width / 2,
-    windowTop + window.height / 2 - screen.height / 2,
+    windowLeft + window.width / 2 - screen.width / 2 - centreShift.dx,
+    windowTop + window.height / 2 - screen.height / 2 - centreShift.dy,
   );
 }
 
@@ -38,6 +45,7 @@ OverlayGeometry fromPluginOffset(
   required double width,
   required double height,
   required OverlayShape shape,
+  Offset centreShift = Offset.zero,
 }) {
   final Size window = windowSizeFor(
     OverlayGeometry(
@@ -45,10 +53,12 @@ OverlayGeometry fromPluginOffset(
   );
   return OverlayGeometry(
     left: pluginOffset.dx +
+        centreShift.dx +
         screen.width / 2 -
         window.width / 2 +
         resizeHandleSize,
     top: pluginOffset.dy +
+        centreShift.dy +
         screen.height / 2 -
         window.height / 2 +
         resizeHandleSize,

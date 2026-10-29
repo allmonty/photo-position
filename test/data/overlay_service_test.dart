@@ -14,12 +14,14 @@ void main() {
         .handlePlatformMessage(
       'photo_position/screen',
       const StandardMethodCodec().encodeMethodCall(
-        const MethodCall('screenChanged', {'width': 800.0, 'height': 400}),
+        const MethodCall('screenChanged',
+            {'width': 800.0, 'height': 400, 'shiftX': 0, 'shiftY': -12}),
       ),
       (_) {},
     );
 
     expect(await next, const Size(800, 400));
     expect(service.screen, const Size(800, 400));
+    expect(service.centreShift, const Offset(0, -12));
   });
 }

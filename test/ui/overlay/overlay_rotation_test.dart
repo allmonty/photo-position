@@ -32,7 +32,17 @@ void main() {
 
   setUp(() {
     service = FakeOverlayService(screen: portrait);
-    repo = MemoryPositionRepository();
+    // Fits both orientations, so "same pixels" is meaningful in the tests below.
+    repo = MemoryPositionRepository()
+      ..current = const PositionSlot(
+        geometry: OverlayGeometry(
+            left: 100,
+            top: 100,
+            width: 200,
+            height: 200,
+            shape: OverlayShape.circle),
+        screen: portrait,
+      );
     vm = OverlayViewModel(service: service, repository: repo);
   });
 
@@ -144,5 +154,48 @@ void main() {
     service.rotateTo(landscape);
     await settle();
     expect(shapeOnScreen(service, vm), vm.geometry!.rect);
+  });
+
+  test('same pixels when the navigation bar shifts the window centre',
+      () async {
+    // Portrait: nav bar at the bottom. Landscape: nav bar at the side.
+    service =
+        FakeOverlayService(screen: portrait, centreShift: const Offset(0, -12));
+    vm = OverlayViewModel(service: service, repository: repo);
+    await vm.start();
+    final before = shapeOnScreen(service, vm);
+
+    service.rotateTo(landscape, centreShift: const Offset(-12, 0));
+    await settle();
+    expect(shapeOnScreen(service, vm), before);
+
+    service.rotateTo(portrait, centreShift: const Offset(0, -12));
+    await settle();
+    expect(shapeOnScreen(service, vm), before);
+  });
+
+  test(
+      'a shape that no longer fits is pulled into view, and restored on return',
+      () async {
+    repo.current = const PositionSlot(
+      geometry: OverlayGeometry(
+          left: 100,
+          top: 600,
+          width: 150,
+          height: 150,
+          shape: OverlayShape.circle),
+      screen: portrait,
+    );
+    await vm.start();
+    final before = shapeOnScreen(service, vm);
+
+    service.rotateTo(landscape);
+    await settle();
+    // Landscape is only 400 high: pulled up so it stays fully visible.
+    expect(shapeOnScreen(service, vm), const Rect.fromLTWH(100, 250, 150, 150));
+
+    service.rotateTo(portrait);
+    await settle();
+    expect(shapeOnScreen(service, vm), before);
   });
 }

@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:photo_position/data/repositories/position_repository.dart';
@@ -91,6 +92,13 @@ class _HomeScreenState extends State<HomeScreen> {
         overlayContent: "Use this overlay to position your camera",
         enableDrag: true,
       );
+      // The overlay engine now exists; let it pull the real screen geometry.
+      try {
+        await const MethodChannel('photo_position/host')
+            .invokeMethod<void>('attachScreenBridge');
+      } on MissingPluginException {
+        // Not running on Android (or in a widget test): nothing to attach.
+      }
       // showOverlay() returns once the native window/Service is requested,
       // but the overlay's own Flutter engine starts up asynchronously and
       // needs time to reach initState() and register its message listener
