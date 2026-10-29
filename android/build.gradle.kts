@@ -17,6 +17,11 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    // flutter_overlay_window 0.5.0 compiles for Java 8, which javac flags as obsolete;
+    // not ours to fix, and it hides nothing in our own code (the app targets 17).
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:-options")
+    }
 }
 
 tasks.register<Delete>("clean") {
