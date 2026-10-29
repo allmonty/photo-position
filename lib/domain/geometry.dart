@@ -3,18 +3,26 @@ import 'dart:ui';
 
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 
-/// Space the overlay window reserves around the visible shape (resize
-/// handles on every side, a control panel on the right).
+/// The resize handles are drawn on the inside of the shape's edge, and the
+/// control panel inside the shape too when the shape is big enough to hold it
+/// clear of the handles, so the controls never limit how big the shape can
+/// be: the native window is exactly the shape. Only a shape too small for the
+/// panel gets a window with the panel beside it.
 const double resizeHandleSize = 20;
 const double panelWidth = 60;
 const double panelHeight = 120;
 
-/// Size of the native overlay window needed to host [g]. The shape sits at
-/// the window's top-left (inset by the handles), the panel to its right.
-Size windowSizeFor(OverlayGeometry g) => Size(
-      g.width + resizeHandleSize * 2 + panelWidth,
-      max(g.height + resizeHandleSize * 2, panelHeight),
-    );
+/// Whether the panel fits inside [g] without covering its resize handles
+/// (the right and bottom handle strips).
+bool panelFitsInside(OverlayGeometry g) =>
+    g.width >= panelWidth + 2 * resizeHandleSize &&
+    g.height >= panelHeight + resizeHandleSize;
+
+/// Size of the native overlay window needed to host [g]; the shape sits at
+/// its top-left corner.
+Size windowSizeFor(OverlayGeometry g) => panelFitsInside(g)
+    ? Size(g.width, g.height)
+    : Size(g.width + panelWidth, max(g.height, panelHeight));
 
 /// The offset `flutter_overlay_window` expects for [g] on [screen].
 ///
@@ -29,11 +37,9 @@ Offset toPluginOffset(
   Offset centreShift = Offset.zero,
 }) {
   final Size window = windowSizeFor(g);
-  final double windowLeft = g.left - resizeHandleSize;
-  final double windowTop = g.top - resizeHandleSize;
   return Offset(
-    windowLeft + window.width / 2 - screen.width / 2 - centreShift.dx,
-    windowTop + window.height / 2 - screen.height / 2 - centreShift.dy,
+    g.left + window.width / 2 - screen.width / 2 - centreShift.dx,
+    g.top + window.height / 2 - screen.height / 2 - centreShift.dy,
   );
 }
 
@@ -52,16 +58,12 @@ OverlayGeometry fromPluginOffset(
         left: 0, top: 0, width: width, height: height, shape: shape),
   );
   return OverlayGeometry(
-    left: pluginOffset.dx +
-        centreShift.dx +
-        screen.width / 2 -
-        window.width / 2 +
-        resizeHandleSize,
+    left:
+        pluginOffset.dx + centreShift.dx + screen.width / 2 - window.width / 2,
     top: pluginOffset.dy +
         centreShift.dy +
         screen.height / 2 -
-        window.height / 2 +
-        resizeHandleSize,
+        window.height / 2,
     width: width,
     height: height,
     shape: shape,

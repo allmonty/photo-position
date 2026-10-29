@@ -88,7 +88,12 @@ class OverlayViewModel extends ChangeNotifier {
     await _apply();
   }
 
-  Future<void> _onScreenChanged(Size screen) => _apply();
+  /// The widget must redraw too: after a quarter turn the displayed shape has
+  /// swapped width and height, not only a different position.
+  Future<void> _onScreenChanged(Size screen) {
+    notifyListeners();
+    return _apply();
+  }
 
   /// Serialised so a rotation arriving mid-resize cannot interleave with it.
   Future<void> _apply() => _pending = _pending.then((_) async {
@@ -145,13 +150,19 @@ class OverlayViewModel extends ChangeNotifier {
   void updateResize(ResizeAxis axis, double delta) {
     final OverlayGeometry? s = _resizeStart;
     if (s == null) return;
-    double clamp(double v) =>
-        v.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize);
+    // Only the screen limits the size: grow from the top-left corner up to the edge.
+    final Size screen = _service.screen;
+    double clamp(double v, double room) =>
+        v.clamp(OverlayGeometry.minSize, max(OverlayGeometry.minSize, room));
     _setDisplay(OverlayGeometry(
       left: s.left,
       top: s.top,
-      width: axis == ResizeAxis.height ? s.width : clamp(s.width + delta),
-      height: axis == ResizeAxis.width ? s.height : clamp(s.height + delta),
+      width: axis == ResizeAxis.height
+          ? s.width
+          : clamp(s.width + delta, screen.width - s.left),
+      height: axis == ResizeAxis.width
+          ? s.height
+          : clamp(s.height + delta, screen.height - s.top),
       shape: s.shape,
     ));
     notifyListeners();

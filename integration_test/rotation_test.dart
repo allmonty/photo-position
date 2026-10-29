@@ -42,8 +42,7 @@ void main() {
       home: OverlayScreen(viewModel: vm, listenForMainApp: false),
     ));
     await tester.pumpAndSettle();
-    expect(service.visibleRect.topLeft + const Offset(20, 20),
-        const Offset(20, 30));
+    expect(service.visibleRect.topLeft, const Offset(20, 30));
 
     // Real device rotation, then the screen change the native bridge would report.
     await SystemChrome.setPreferredOrientations(
@@ -53,8 +52,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // The glass' top-left corner is the display's bottom-left corner now.
-    expect(service.visibleRect.topLeft + const Offset(20, 20),
-        const Offset(30, 260));
+    expect(service.visibleRect.topLeft, const Offset(30, 260));
     expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
         const Size(120, 120));
     expect(repo.current!.geometry, glass);

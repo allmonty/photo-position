@@ -89,8 +89,7 @@ void main() {
     await overlay.loadPosition(slot!);
 
     expect(overlay.geometry!.rect, savedRect);
-    expect(
-        service.visibleRect.topLeft + const Offset(20, 20), savedRect.topLeft);
+    expect(service.visibleRect.topLeft, savedRect.topLeft);
   });
 
   test(

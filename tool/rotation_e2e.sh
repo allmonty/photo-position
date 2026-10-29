@@ -12,10 +12,13 @@ set -euo pipefail
 source "$(dirname "$0")/e2e_common.sh"
 
 start_overlay
-# Off-centre and not symmetric, so a wrong rotation cannot pass by luck.
-drag_overlay -150 -500
+# A tall rectangle, off-centre: not symmetric, so a wrong rotation or a view
+# that was not redrawn cannot pass by luck.
+make_tall_rectangle
+drag_overlay -150 -300
 portrait_shape=$(shape_rect)
 echo "portrait (glass): $portrait_shape"
+assert_border_drawn "$portrait_shape"
 
 fail=0
 check() { # name rotation
@@ -26,6 +29,7 @@ check() { # name rotation
   want=$(expected_shape "$portrait_shape" "$2")
   echo "$1: now=$now expected=$want"
   same_frame "$want" "$now" || { echo "FAIL: $1 is not where the glass says"; fail=1; }
+  assert_border_drawn "$now" || { echo "FAIL: $1 shape was not redrawn"; fail=1; }
 }
 check "landscape (rotation 1)" 1
 check "upside down (rotation 2)" 2

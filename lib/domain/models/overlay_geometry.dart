@@ -20,7 +20,10 @@ class OverlayGeometry {
   });
 
   static const double minSize = 50;
-  static const double maxSize = 500;
+
+  /// A sanity bound for stored values; on screen the size is limited by the
+  /// screen itself.
+  static const double maxSize = 4000;
 
   final double left;
   final double top;
@@ -61,9 +64,9 @@ class OverlayGeometry {
         'shape': shape.name,
       };
 
-  /// Moves the shape so it lies fully inside [screen] (e.g. a slot saved in
-  /// portrait loaded in landscape). Size is kept, shrunk only if the screen
-  /// is smaller than the shape.
+  /// Moves the shape so it lies fully inside [screen]. Size is kept, shrunk
+  /// only if the screen is smaller than the shape. Only the shape is kept in
+  /// view, never its control panel: the shape's place on the glass is exact.
   OverlayGeometry clampedTo(Size screen) {
     final double w = width.clamp(0, screen.width);
     final double h = height.clamp(0, screen.height);

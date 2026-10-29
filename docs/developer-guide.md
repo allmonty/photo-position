@@ -19,7 +19,7 @@ iOS: `flutter run -d <simulator-id>` shows the home screen and slots; there is n
 | `flutter test` | unit and widget tests, no device |
 | `dart format lib test testing integration_test` | formatting (CI checks it) |
 | `flutter test integration_test -d <id>` | rotates the real display; Android emulator or iOS simulator |
-| `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates through all four orientations, asserts the shape is where the glass says (within 4 px) |
+| `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates through all four orientations, asserts a tall rectangle is where the glass says (within 4 px) and its gold border is really drawn there (screenshot sampling, `tool/check_border.py`) |
 | `tool/slots_e2e.sh` | Android: saves two slots, loads them, asserts the window frame returns within 2 px |
 
 ## Architecture
@@ -34,7 +34,7 @@ See [CLAUDE.md](../CLAUDE.md) for the layer map. In short: `OverlayViewModel` ow
 | `test/data/position_repository_test.dart` | storage, corrupt data, slots, legacy key migration |
 | `test/data/overlay_service_test.dart` | screen size pushed from native |
 | `test/ui/overlay/overlay_rotation_test.dart` | glass pinning: corner mapping for each rotation, circle/square, controls on/off, drag and resize while turned, 20 turns, nav bar, slots |
-| `test/ui/overlay/overlay_screen_test.dart` | handles, panel, close |
+| `test/ui/overlay/overlay_screen_test.dart` | handles, panel, close, a tall rectangle redrawn wide after turning |
 | `test/ui/home/slots_test.dart` | slots view model, section, thumbnail |
 | `test/ui/home/home_view_model_test.dart` | start/stop, permission, overlay closing itself, sending a slot |
 | `test/ui/home/home_screen_test.dart` | the home screen on `FakeOverlayHost` |

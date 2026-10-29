@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:ui';
 
-import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,12 +89,18 @@ class SharedPreferencesPositionRepository implements PositionRepository {
     final double size = prefs.getDouble('overlayCircleSize') ?? 200;
     final double w = circle ? size : prefs.getDouble('overlayWidth') ?? 200;
     final double h = circle ? size : prefs.getDouble('overlayHeight') ?? 200;
+    final double cw = w.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize);
+    final double ch = h.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize);
+    // The old window was the shape plus a 20dp handle margin on every side
+    // and a 60dp panel on the right; the shape sat 20dp inside its corner.
+    final double windowW = cw + 40 + 60;
+    final double windowH = max(ch + 40, 120.0);
     return PositionSlot(
-      geometry: fromPluginOffset(
-        Offset(x, y),
-        screen,
-        width: w.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
-        height: h.clamp(OverlayGeometry.minSize, OverlayGeometry.maxSize),
+      geometry: OverlayGeometry(
+        left: x + screen.width / 2 - windowW / 2 + 20,
+        top: y + screen.height / 2 - windowH / 2 + 20,
+        width: cw,
+        height: ch,
         shape: circle ? OverlayShape.circle : OverlayShape.square,
       ),
       screen: screen,

@@ -74,14 +74,33 @@ natural_size() {
   adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1 | tr 'x' ' '
 }
 
-# "l t r b" (px) of the shape inside the overlay window: the window adds a
-# 20dp handle margin on every side and a 60dp control panel on the right.
-shape_rect() {
+# "l t r b" (px) of the shape. The window is exactly the shape as long as the
+# shape is big enough to hold the control panel inside (>= 100 x 140 dp).
+shape_rect() { overlay_frame; }
+
+# Fails unless the gold border is really drawn on all four edges of "l t r b".
+# Catches a window that has the right size while the Flutter view still shows
+# the old shape.
+assert_border_drawn() {
+  local d
+  d=$(px_per_dp)
+  adb exec-out screencap | python3 -I "$(dirname "${BASH_SOURCE[0]}")/check_border.py" $1 "$(awk -v d="$d" 'BEGIN{printf "%d", 2.5*d}')"
+}
+
+# Turns the default circle into a tall rectangle: toggle the shape (panel
+# button), then drag the bottom handle down. Coordinates come from the window
+# frame, the panel sits inside the shape at its right.
+make_tall_rectangle() {
   local f d
   read -ra f <<<"$(overlay_frame)"
   d=$(px_per_dp)
-  awk -v l="${f[0]}" -v t="${f[1]}" -v r="${f[2]}" -v b="${f[3]}" -v d="$d" \
-    'BEGIN { printf "%d %d %d %d", l + 20*d, t + 20*d, r - 80*d, b - 20*d }'
+  adb shell input tap "$(awk -v l="${f[0]}" -v d="$d" 'BEGIN{printf "%d", l + 150*d}')" \
+    "$(awk -v t="${f[1]}" -v d="$d" 'BEGIN{printf "%d", t + 118*d}')"
+  sleep 2
+  read -ra f <<<"$(overlay_frame)"
+  adb shell input swipe "$(((f[0] + f[2]) / 2 - 40))" "$(awk -v b="${f[3]}" -v d="$d" 'BEGIN{printf "%d", b - 10*d}')" \
+    "$(((f[0] + f[2]) / 2 - 40))" "$(awk -v b="${f[3]}" -v d="$d" 'BEGIN{printf "%d", b - 10*d + 300}')" 800
+  sleep 2
 }
 
 # Where portrait shape rect $1 ("l t r b") must be after turning the phone to

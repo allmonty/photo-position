@@ -33,15 +33,24 @@ void main() {
         'same absolute geometry yields a different plugin offset after '
         'the screen swaps, which is what must be re-sent on rotation', () {
       expect(toPluginOffset(g, portrait), isNot(toPluginOffset(g, landscape)));
-      // Window is 300x160; centre at (100-20+150, 150-20+80) = (230, 210).
+      // 200x120 is too small to hold the panel, so the window is 260x120 at
+      // the shape's corner: centre (230, 210).
       expect(toPluginOffset(g, portrait), const Offset(30, -190));
       expect(toPluginOffset(g, landscape), const Offset(-170, 10));
     });
 
-    test('window is at least as tall as the control panel', () {
+    test('the window is exactly the shape, so controls never limit its size',
+        () {
+      const big = OverlayGeometry(
+          left: 0, top: 0, width: 400, height: 800, shape: OverlayShape.square);
+      expect(windowSizeFor(big), const Size(400, 800));
+    });
+
+    test('a shape too small to hold the panel gets the panel beside it', () {
       const small = OverlayGeometry(
           left: 0, top: 0, width: 50, height: 50, shape: OverlayShape.circle);
-      expect(windowSizeFor(small).height, panelHeight);
+      expect(panelFitsInside(small), isFalse);
+      expect(windowSizeFor(small), const Size(110, 120));
     });
   });
 

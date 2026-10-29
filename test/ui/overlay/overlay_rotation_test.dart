@@ -21,11 +21,11 @@ const topLeftOnGlass = OverlayGeometry(
 );
 
 /// The shape's rectangle on the real screen, derived from where the fake
-/// native window actually is (the shape sits 20dp inside the window corner).
+/// native window actually is (the shape sits at the window's top-left corner).
 Rect shapeOnScreen(FakeOverlayService s, OverlayViewModel vm) {
   final g = vm.geometry!;
   return Rect.fromLTWH(
-      s.visibleRect.left + 20, s.visibleRect.top + 20, g.width, g.height);
+      s.visibleRect.left, s.visibleRect.top, g.width, g.height);
 }
 
 Future<void> settle() => Future<void>.delayed(Duration.zero);
@@ -267,5 +267,44 @@ void main() {
     turn(1);
     await settle();
     expect(shapeOnScreen(service, vm), vm.geometry!.rect);
+  });
+
+  group('what the user sees', () {
+    test('listeners are told when the phone turns, so the widget redraws',
+        () async {
+      await startWith(topLeftOnGlass);
+      var notified = 0;
+      vm.addListener(() => notified++);
+      turn(1);
+      await settle();
+      expect(notified, greaterThan(0));
+    });
+
+    test('a shape as big as the whole glass fits in every orientation',
+        () async {
+      await startWith(const OverlayGeometry(
+          left: 0,
+          top: 0,
+          width: 400,
+          height: 800,
+          shape: OverlayShape.square));
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(0, 0, 400, 800));
+      expect(service.window, const Size(400, 800),
+          reason: 'controls do not enlarge the window');
+
+      turn(1);
+      await settle();
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(0, 0, 800, 400));
+      expect(service.window, const Size(800, 400));
+    });
+
+    test('the shape can be resized all the way to the screen edge, not further',
+        () async {
+      await startWith(topLeftOnGlass);
+      vm.beginResize();
+      vm.updateResize(ResizeAxis.both, 5000);
+      await vm.endResize();
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 30, 380, 770));
+    });
   });
 }

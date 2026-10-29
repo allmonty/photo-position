@@ -86,4 +86,36 @@ void main() {
     expect(service.closed, isTrue);
     expect(repo.current!.geometry, vm.geometry);
   });
+
+  testWidgets(
+      'a tall rectangle is drawn wide after the phone turns, in the same glass spot',
+      (tester) async {
+    service = FakeOverlayService();
+    repo = MemoryPositionRepository()
+      ..current = const PositionSlot(
+        geometry: OverlayGeometry(
+            left: 20,
+            top: 30,
+            width: 100,
+            height: 300,
+            shape: OverlayShape.square),
+        screen: Size(400, 800),
+      );
+    vm = OverlayViewModel(service: service, repository: repo);
+    await tester.pumpWidget(MaterialApp(
+      theme: artDecoTheme,
+      home: OverlayScreen(viewModel: vm, listenForMainApp: false),
+    ));
+    await tester.pump();
+    expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
+        const Size(100, 300));
+
+    service.rotateTo(const Size(800, 400), rotation: 1);
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
+        const Size(300, 100));
+    expect(service.window.width, greaterThanOrEqualTo(300));
+  });
 }

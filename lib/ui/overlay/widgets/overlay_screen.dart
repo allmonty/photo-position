@@ -98,23 +98,19 @@ class _OverlayScreenState extends State<OverlayScreen> {
     );
   }
 
-  Widget _grip({required bool vertical}) => SizedBox(
-        width: vertical ? resizeHandleSize : null,
-        height: vertical ? null : resizeHandleSize,
-        child: Center(
-          child: SizedBox(
-            width: vertical ? 4 : 24,
-            height: vertical ? 24 : 4,
-            child: vertical
-                ? const VerticalDivider(color: kGold, thickness: 2)
-                : const Divider(color: kGold, thickness: 2),
-          ),
+  Widget _grip({required bool vertical}) => Center(
+        child: SizedBox(
+          width: vertical ? 4 : 24,
+          height: vertical ? 24 : 4,
+          child: vertical
+              ? const VerticalDivider(color: kGold, thickness: 2)
+              : const Divider(color: kGold, thickness: 2),
         ),
       );
 
   Widget _shape(OverlayGeometry g) => Positioned(
-        left: resizeHandleSize,
-        top: resizeHandleSize,
+        left: 0,
+        top: 0,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _vm.toggleControls,
@@ -133,45 +129,49 @@ class _OverlayScreenState extends State<OverlayScreen> {
         ),
       );
 
-  Widget _content(OverlayGeometry g) {
+  /// The resize handles sit on the inside of the shape's edge, so the shape
+  /// can grow to the screen edge: a rectangle has one on its right and one
+  /// on its bottom edge, a circle one at the bottom.
+  List<Widget> _handles(OverlayGeometry g) {
     final bool circle = g.shape == OverlayShape.circle;
-    return SizedBox(
-      width: g.width + resizeHandleSize * 2,
-      height: g.height + resizeHandleSize * 2,
-      child: Stack(
-        children: [
-          _shape(g),
-          if (!circle)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              child: _handle(
-                horizontalResizeHandleKey,
-                ResizeAxis.width,
-                horizontal: true,
-                child: _grip(vertical: true),
-              ),
-            ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _handle(
-              circle ? circleResizeHandleKey : verticalResizeHandleKey,
-              circle ? ResizeAxis.both : ResizeAxis.height,
-              horizontal: false,
-              child: _grip(vertical: false),
-            ),
+    return [
+      if (!circle)
+        Positioned(
+          left: g.width - resizeHandleSize,
+          top: 0,
+          width: resizeHandleSize,
+          height: g.height,
+          child: _handle(
+            horizontalResizeHandleKey,
+            ResizeAxis.width,
+            horizontal: true,
+            child: _grip(vertical: true),
           ),
-        ],
+        ),
+      Positioned(
+        left: circle ? g.width / 2 - 30 : 0,
+        top: g.height - resizeHandleSize,
+        width: circle ? 60 : g.width,
+        height: resizeHandleSize,
+        child: _handle(
+          circle ? circleResizeHandleKey : verticalResizeHandleKey,
+          circle ? ResizeAxis.both : ResizeAxis.height,
+          horizontal: false,
+          child: _grip(vertical: false),
+        ),
       ),
-    );
+    ];
   }
 
-  Widget _panel(double windowHeight, OverlayGeometry g) => Positioned(
-        top: (windowHeight - panelHeight) / 2,
-        right: 0,
+  /// Inside the shape, clear of the right and bottom handle strips, when it
+  /// fits; otherwise beside the shape (the window is wider then).
+  Widget _panel(Size window, OverlayGeometry g) => Positioned(
+        top: panelFitsInside(g)
+            ? (window.height - resizeHandleSize - panelHeight) / 2
+            : (window.height - panelHeight) / 2,
+        left: panelFitsInside(g)
+            ? window.width - resizeHandleSize - panelWidth
+            : g.width,
         child: Container(
           width: panelWidth,
           height: panelHeight,
@@ -224,8 +224,9 @@ class _OverlayScreenState extends State<OverlayScreen> {
               height: window.height,
               child: Stack(
                 children: [
-                  _content(g),
-                  if (_vm.showControls) _panel(window.height, g)
+                  _shape(g),
+                  ..._handles(g),
+                  if (_vm.showControls) _panel(window, g),
                 ],
               ),
             ),
