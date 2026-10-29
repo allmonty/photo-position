@@ -61,6 +61,15 @@ class OverlayViewModel extends ChangeNotifier {
   bool get isResizing => _isResizing;
   bool get closed => _closed;
 
+  /// Starts again after [close]: the overlay window was closed and shown anew
+  /// while this view model lived on. Does nothing while already open, so a
+  /// first start that also receives `open` is not run twice.
+  Future<void> reopen() async {
+    if (!_closed) return;
+    _closed = false;
+    await start();
+  }
+
   Future<void> start() async {
     try {
       await _service.refreshScreen();

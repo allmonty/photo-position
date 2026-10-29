@@ -39,7 +39,8 @@ void main() {
     final vm = OverlayViewModel(service: service, repository: repo);
     await tester.pumpWidget(MaterialApp(
       theme: artDecoTheme,
-      home: OverlayScreen(viewModel: vm, listenForMainApp: false),
+      home:
+          OverlayScreen(viewModel: vm, messages: const Stream<dynamic>.empty()),
     ));
     await tester.pumpAndSettle();
     expect(service.visibleRect.topLeft, const Offset(20, 30));

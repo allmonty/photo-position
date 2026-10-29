@@ -20,6 +20,7 @@ iOS: `flutter run -d <simulator-id>` shows the home screen and slots; there is n
 | `dart format lib test testing integration_test` | formatting (CI checks it) |
 | `flutter test integration_test -d <id>` | rotates the real display; Android emulator or iOS simulator |
 | `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates through all four orientations, asserts a tall rectangle is where the glass says (within 4 px) and its gold border is really drawn there (screenshot sampling, `tool/check_border.py`) |
+| `tool/restart_e2e.sh` | Android: stop and start the overlay twice; it comes back at the same frame, drawn, and still follows a drag |
 | `tool/slots_e2e.sh` | Android: saves two slots, loads them, asserts the window frame returns within 2 px |
 
 ## Architecture

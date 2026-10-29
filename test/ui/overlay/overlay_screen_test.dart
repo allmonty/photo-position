@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
@@ -25,7 +27,8 @@ void main() {
     vm = OverlayViewModel(service: service, repository: repo);
     await tester.pumpWidget(MaterialApp(
       theme: artDecoTheme,
-      home: OverlayScreen(viewModel: vm, listenForMainApp: false),
+      home:
+          OverlayScreen(viewModel: vm, messages: const Stream<dynamic>.empty()),
     ));
     await tester.pump();
   }
@@ -104,7 +107,8 @@ void main() {
     vm = OverlayViewModel(service: service, repository: repo);
     await tester.pumpWidget(MaterialApp(
       theme: artDecoTheme,
-      home: OverlayScreen(viewModel: vm, listenForMainApp: false),
+      home:
+          OverlayScreen(viewModel: vm, messages: const Stream<dynamic>.empty()),
     ));
     await tester.pump();
     expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
@@ -117,5 +121,73 @@ void main() {
     expect(tester.getSize(find.byKey(overlayShapeContainerKey)),
         const Size(300, 100));
     expect(service.window.width, greaterThanOrEqualTo(300));
+  });
+
+  group('messages from the main app', () {
+    late StreamController<dynamic> messages;
+
+    Future<void> pumpWithMessages(WidgetTester tester) async {
+      service = FakeOverlayService();
+      repo = MemoryPositionRepository()
+        ..current = const PositionSlot(
+          geometry: OverlayGeometry(
+              left: 20,
+              top: 30,
+              width: 150,
+              height: 150,
+              shape: OverlayShape.square),
+          screen: Size(400, 800),
+        );
+      vm = OverlayViewModel(service: service, repository: repo);
+      messages = StreamController<dynamic>();
+      await tester.pumpWidget(MaterialApp(
+        theme: artDecoTheme,
+        home: OverlayScreen(viewModel: vm, messages: messages.stream),
+      ));
+      await tester.pump();
+    }
+
+    testWidgets('close_overlay_and_reset closes, open starts it again',
+        (tester) async {
+      await pumpWithMessages(tester);
+
+      messages.add({'action': 'close_overlay_and_reset'});
+      await tester.pump();
+      await tester.pump();
+      expect(service.closed, isTrue);
+      expect(vm.closed, isTrue);
+
+      service.offset = Offset.zero; // fresh default window from the plugin
+      messages.add({'action': 'open'});
+      await tester.pump();
+      await tester.pump();
+      expect(vm.closed, isFalse);
+      expect(service.visibleRect.topLeft, const Offset(20, 30));
+    });
+
+    testWidgets('load_position moves the shape', (tester) async {
+      await pumpWithMessages(tester);
+      const slot = PositionSlot(
+        geometry: OverlayGeometry(
+            left: 100,
+            top: 200,
+            width: 150,
+            height: 150,
+            shape: OverlayShape.square),
+        screen: Size(400, 800),
+      );
+      messages.add({'action': 'load_position', 'slot': slot.toJson()});
+      await tester.pump();
+      await tester.pump();
+      expect(service.visibleRect.topLeft, const Offset(100, 200));
+    });
+
+    testWidgets('unknown or malformed messages are ignored', (tester) async {
+      await pumpWithMessages(tester);
+      messages.add('not a map');
+      messages.add({'action': 'nope'});
+      await tester.pump();
+      expect(vm.closed, isFalse);
+    });
   });
 }

@@ -67,6 +67,10 @@ class PluginOverlayHost implements OverlayHost {
     } on MissingPluginException {
       // Not running on Android: nothing to attach.
     }
+    // On a second start the overlay engine and its Dart state are still
+    // alive from the first (only the window was closed), so tell it to open.
+    // On the first start nobody listens yet; initState starts it then.
+    await send({'action': 'open'});
   }
 
   @override

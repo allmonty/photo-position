@@ -307,4 +307,45 @@ void main() {
       expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 30, 380, 770));
     });
   });
+
+  group('stopping and starting again', () {
+    test('after close, reopen puts the window back where it was saved',
+        () async {
+      await startWith(topLeftOnGlass);
+      await vm.close();
+      expect(vm.closed, isTrue);
+      final callsBefore = service.moveCalls;
+      service.offset = Offset.zero; // the plugin made a fresh, default window
+
+      await vm.reopen();
+
+      expect(vm.closed, isFalse);
+      expect(service.moveCalls, greaterThan(callsBefore));
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(20, 30, 100, 100));
+    });
+
+    test('reopen while already open does nothing', () async {
+      await startWith(topLeftOnGlass);
+      final calls = service.moveCalls;
+      await vm.reopen();
+      expect(service.moveCalls, calls);
+    });
+
+    test('a position changed while stopped is used by the next start',
+        () async {
+      await startWith(topLeftOnGlass);
+      await vm.close();
+      repo.current = const PositionSlot(
+        geometry: OverlayGeometry(
+            left: 50,
+            top: 60,
+            width: 100,
+            height: 100,
+            shape: OverlayShape.circle),
+        screen: portrait,
+      );
+      await vm.reopen();
+      expect(shapeOnScreen(service, vm), const Rect.fromLTWH(50, 60, 100, 100));
+    });
+  });
 }

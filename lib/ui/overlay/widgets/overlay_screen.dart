@@ -23,14 +23,13 @@ const double _borderWidth = 5;
 /// native overlay window. All sizing and positioning lives in
 /// [OverlayViewModel]; this widget only reports gestures to it.
 class OverlayScreen extends StatefulWidget {
-  const OverlayScreen(
-      {super.key, required this.viewModel, this.listenForMainApp = true});
+  const OverlayScreen({super.key, required this.viewModel, this.messages});
 
   final OverlayViewModel viewModel;
 
-  /// Subscribes to messages from the main app; off in widget tests, where the
-  /// plugin's single-subscription stream is unavailable.
-  final bool listenForMainApp;
+  /// Messages from the main app. Defaults to the plugin's listener; tests
+  /// pass their own stream because the plugin's is not available off-device.
+  final Stream<dynamic>? messages;
 
   @override
   State<OverlayScreen> createState() => _OverlayScreenState();
@@ -46,18 +45,26 @@ class _OverlayScreenState extends State<OverlayScreen> {
   void initState() {
     super.initState();
     unawaited(_vm.start());
-    if (widget.listenForMainApp) {
-      _messages = FlutterOverlayWindow.overlayListener.listen((dynamic event) {
-        if (event is! Map) return;
-        if (event['action'] == 'close_overlay_and_reset') {
-          unawaited(_close());
-        } else if (event['action'] == 'load_position') {
-          final PositionSlot? slot = PositionSlot.fromJson(
-            Map<String, dynamic>.from(event['slot'] as Map<Object?, Object?>),
-          );
-          if (slot != null) unawaited(_vm.loadPosition(slot));
-        }
-      });
+    _messages = (widget.messages ?? FlutterOverlayWindow.overlayListener)
+        .listen(_onMessage);
+  }
+
+  /// The overlay engine outlives the overlay window: closing it leaves this
+  /// widget and its view model alive, so starting the overlay again does not
+  /// run `initState` again. The main app sends `open` after every start and
+  /// the view model picks up from the last saved position.
+  void _onMessage(dynamic event) {
+    if (event is! Map) return;
+    switch (event['action']) {
+      case 'close_overlay_and_reset':
+        unawaited(_close());
+      case 'open':
+        unawaited(_vm.reopen());
+      case 'load_position':
+        final PositionSlot? slot = PositionSlot.fromJson(
+          Map<String, dynamic>.from(event['slot'] as Map<Object?, Object?>),
+        );
+        if (slot != null) unawaited(_vm.loadPosition(slot));
     }
   }
 
