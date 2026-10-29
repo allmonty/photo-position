@@ -64,7 +64,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(title: const Text('PHOTO POSITION')),
       body: Center(
+        // Past the ends the content follows the finger and springs back on
+        // release (instead of Android's stretch effect).
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(

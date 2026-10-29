@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/config/dependencies.dart';
 import 'package:photo_position/main.dart';
@@ -58,5 +59,24 @@ void main() {
     await tester.pump();
     expect(find.textContaining('permission is required'), findsOneWidget);
     expect(find.text('START OVERLAY'), findsOneWidget);
+  });
+
+  testWidgets(
+      'pulling past the top drags the content and it springs back on release',
+      (tester) async {
+    await pumpApp(tester);
+    final position =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    expect(position.pixels, 0);
+
+    final gesture = await tester.startGesture(const Offset(200, 300));
+    await gesture.moveBy(const Offset(0, 150));
+    await tester.pump();
+    expect(position.pixels, lessThan(0),
+        reason: 'content follows the finger past the top');
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(position.pixels, 0, reason: 'springs back after release');
   });
 }
