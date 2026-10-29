@@ -10,6 +10,8 @@ flutter analyze && flutter test
 Android builds use Gradle 9.1 / AGP 8.13 and need a JDK Gradle supports (Android Studio's bundled JDK 25 works). An emulator with API 30+ is enough; grant overlay permission with
 `adb shell appops set com.example.photo_position SYSTEM_ALERT_WINDOW allow`.
 
+iOS: `flutter run -d <simulator-id>` shows the home screen and slots; there is no overlay on iOS. Icons: `dart run flutter_launcher_icons` after changing `assets/icon/icon.png`.
+
 ## Everyday commands
 
 | Command | Use |

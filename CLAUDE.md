@@ -9,7 +9,7 @@ flutter pub get                       # install dependencies
 flutter analyze                       # lint (strict modes, see analysis_options.yaml)
 flutter test                          # unit + widget tests
 dart format --output=none --set-exit-if-changed lib test testing integration_test
-flutter test integration_test -d <device-id>    # real-device rotation tests
+flutter test integration_test -d <device-id>    # real display rotation: Android emulator or iOS simulator
 tool/rotation_e2e.sh                  # Android only: real overlay window across rotations (needs adb + app installed)
 tool/slots_e2e.sh                     # Android only: save two slots, load them, window returns to the saved frame
 flutter run                           # run on a device/emulator
@@ -20,7 +20,7 @@ Android builds need a JDK Gradle 9.1 supports (the project builds with Android S
 
 ## Architecture
 
-**Flutter, Android-only for the overlay** (`flutter_overlay_window` is Android-only). Two Flutter engines run in one process: the main app (`main()` -> `HomeScreen`) and the overlay window (`overlayMain()` -> `OverlayScreen`, a separate entry point annotated `@pragma("vm:entry-point")`).
+**Flutter; the overlay is Android-only, iOS runs the shared logic and home screen** (`flutter_overlay_window` is Android-only). Two Flutter engines run in one process: the main app (`main()` -> `HomeScreen`) and the overlay window (`overlayMain()` -> `OverlayScreen`, a separate entry point annotated `@pragma("vm:entry-point")`).
 
 ```
 lib/

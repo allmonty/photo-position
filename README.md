@@ -25,4 +25,4 @@ The home screen has three slots drawn as a phone with the saved shape on it. The
 
 ## Platform support
 
-Android only: the overlay uses `SYSTEM_ALERT_WINDOW`, which iOS does not offer. The position logic is plain Dart, so `flutter test` runs anywhere; there is no overlay on iOS, and the project has no `ios/` folder.
+Android is the real target: the overlay uses `SYSTEM_ALERT_WINDOW`, which iOS does not offer. The app also builds and runs on the iOS simulator (home screen, saved positions, icon), but starting the overlay does nothing there. The position logic is plain Dart, so `flutter test` and `flutter test integration_test -d <simulator>` run on both platforms.

@@ -16,3 +16,4 @@ Append-only. A later entry that replaces an earlier one says so.
 | 10 | 2026-10-29 | `main.dart` holds only the entry points; platform access from the main app goes through `OverlayHost`, and `Dependencies` is the single wiring point. | The 448-line `main.dart` mixed UI, permission, port and channel code that could only be tested by mocking platform channels. |
 | 11 | 2026-10-29 | The `portName` handshake (500 ms delay + `shareData`) is removed. | Both sides use the constant `overlayPortName`; the handshake only delayed startup. |
 | 12 | 2026-10-29 | Slot save/load is covered by unit tests on one repository, plus a single device script (`tool/slots_e2e.sh`). | The logic is in Dart; the script only proves the real window ends up on the saved frame. |
+| 13 | 2026-10-29 | The project has an `ios/` folder (replaces the iOS part of #9). | Requested by the user to run the shared Dart logic and UI on the iOS simulator; the overlay window is still Android-only. |
