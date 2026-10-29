@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/data/repositories/position_repository.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,5 +61,17 @@ void main() {
           height: 120,
           shape: OverlayShape.square),
     );
+  });
+
+  test('style defaults, saves and survives corrupt data', () async {
+    final repo = SharedPreferencesPositionRepository();
+    expect(await repo.loadStyle(), const OverlayStyle());
+
+    const style = OverlayStyle(borderWidth: 9, borderColor: Color(0xFF34C759));
+    await repo.saveStyle(style);
+    expect(await repo.loadStyle(), style);
+
+    SharedPreferences.setMockInitialValues({'overlayStyle': '{oops'});
+    expect(await repo.loadStyle(), const OverlayStyle());
   });
 }

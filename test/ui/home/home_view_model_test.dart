@@ -1,6 +1,7 @@
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/ui/home/view_models/home_view_model.dart';
 
@@ -75,6 +76,18 @@ void main() {
     await vm.moveOverlayTo(slot);
     expect(host.sent.single['action'], 'load_position');
     expect(PositionSlot.fromJson(host.sent.single['slot']), slot);
+  });
+
+  test('a style change reaches a running overlay, and is ignored when stopped',
+      () async {
+    const style = OverlayStyle(borderWidth: 9, borderColor: Color(0xFFFF3B30));
+    await vm.updateStyle(style);
+    expect(host.sent, isEmpty);
+
+    await vm.start();
+    await vm.updateStyle(style);
+    expect(host.sent.single['action'], 'set_style');
+    expect(OverlayStyle.fromJson(host.sent.single['style']), style);
   });
 
   test('dispose releases the host', () {

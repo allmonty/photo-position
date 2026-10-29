@@ -18,8 +18,13 @@ node_center() {
 }
 
 tap_desc() {
-  local c
-  c=$(node_center "$1") || { echo "not found on screen: $1"; exit 1; }
+  local c try
+  # A screen can still be loading (cold start, after a restart): wait up to ~30s.
+  for try in $(seq 1 15); do
+    c=$(node_center "$1") && break
+    sleep 2
+  done
+  [ -n "${c:-}" ] || { echo "not found on screen: $1"; exit 1; }
   # shellcheck disable=SC2086
   adb shell input tap $c
 }
@@ -78,13 +83,19 @@ natural_size() {
 # shape is big enough to hold the control panel inside (>= 100 x 140 dp).
 shape_rect() { overlay_frame; }
 
-# Fails unless the gold border is really drawn on all four edges of "l t r b".
+# Fails unless the border is really drawn on all four edges of "l t r b"; gold
+# by default, or the opaque colour $2 (RRGGBB).
 # Catches a window that has the right size while the Flutter view still shows
 # the old shape.
 assert_border_drawn() {
-  local d
+  local d try
   d=$(px_per_dp)
-  adb exec-out screencap | python3 -I "$(dirname "${BASH_SOURCE[0]}")/check_border.py" $1 "$(awk -v d="$d" 'BEGIN{printf "%d", 2.5*d}')"
+  # The view can lag a moment behind the window after a drag or restart.
+  for try in 1 2 3; do
+    adb exec-out screencap | python3 -I "$(dirname "${BASH_SOURCE[0]}")/check_border.py" $1 "$(awk -v d="$d" 'BEGIN{printf "%d", 2.5*d}')" ${2:-} && return 0
+    sleep 2
+  done
+  return 1
 }
 
 # Turns the default circle into a tall rectangle: toggle the shape (panel

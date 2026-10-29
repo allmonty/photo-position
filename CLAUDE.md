@@ -13,6 +13,7 @@ flutter test integration_test -d <device-id>    # real display rotation: Android
 tool/rotation_e2e.sh                  # Android only: real overlay window across rotations (needs adb + app installed)
 tool/slots_e2e.sh                     # Android only: save two slots, load them, window returns to the saved frame
 tool/restart_e2e.sh                   # Android only: stop and start the overlay twice, it comes back where it was
+tool/style_e2e.sh                     # Android only: pick a border colour, running overlay recolours, kept after restart
 flutter run                           # run on a device/emulator
 flutter build apk --release
 ```
@@ -49,9 +50,13 @@ Two non-obvious facts about the plugin, both verified on a device:
 
 ### Cross-engine communication
 
-`IsolateNameServer` port `photo_position_overlay_port` (overlay -> main: `close_overlay`; owned by `PluginOverlayHost`), `FlutterOverlayWindow.shareData` (main -> overlay: `close_overlay_and_reset`, `open`, `load_position`), and shared_preferences (the overlay writes the current position; the main app `reload()`s before reading).
+`IsolateNameServer` port `photo_position_overlay_port` (overlay -> main: `close_overlay`; owned by `PluginOverlayHost`), `FlutterOverlayWindow.shareData` (main -> overlay: `close_overlay_and_reset`, `open`, `load_position`, `set_style`), and shared_preferences (the overlay writes the current position; the main app `reload()`s before reading).
 
 The overlay's Flutter engine is cached by the plugin and **outlives the overlay window**: after Stop, the widget tree and `OverlayViewModel` (closed) are still alive, and starting again does not run `initState`. `PluginOverlayHost.show()` therefore sends `open` after every start, and `OverlayViewModel.reopen()` starts it again from the saved position.
+
+### Border style
+
+`OverlayStyle` (border width and colour, chosen in the BORDER section of the home screen) is saved next to the positions in `PositionRepository`. `StyleViewModel` shows changes live (`set_style` message to a running overlay) and saves when a slider drag ends or a colour is picked; the overlay reads it on every start. It applies to all positions, not per slot.
 
 ### Slots
 

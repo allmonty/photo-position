@@ -14,6 +14,10 @@ flutter run        # on an Android device or emulator
 3. Open your camera app; the overlay stays on top.
 4. Rotating the phone carries the shape with it: same place on the glass, same shape (a rectangle turns with the phone); only the control panel is always upright.
 
+### Border
+
+The BORDER section on the home screen sets the border size and colour. A running overlay changes at once and the choice is remembered.
+
 ### Saved positions
 
 The home screen has three slots drawn as a phone with the saved shape on it. The save icon stores the overlay's current position, tapping a slot moves the overlay there (or opens it there), the cross empties it.

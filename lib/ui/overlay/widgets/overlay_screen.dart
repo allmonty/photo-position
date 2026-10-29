@@ -6,6 +6,7 @@ import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:photo_position/data/services/overlay_host.dart';
 import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
@@ -16,8 +17,6 @@ const Key horizontalResizeHandleKey = ValueKey('horizontalResizeHandle');
 const Key verticalResizeHandleKey = ValueKey('verticalResizeHandle');
 const Key circleResizeHandleKey = ValueKey('circleResizeHandle');
 const Key closeButtonKey = ValueKey('closeOverlayButton');
-
-const double _borderWidth = 5;
 
 /// The shape, its resize handles and the control panel, drawn inside the
 /// native overlay window. All sizing and positioning lives in
@@ -60,6 +59,10 @@ class _OverlayScreenState extends State<OverlayScreen> {
         unawaited(_close());
       case 'open':
         unawaited(_vm.reopen());
+      case 'set_style':
+        _vm.setStyle(OverlayStyle.fromJson(
+          Map<String, dynamic>.from(event['style'] as Map<Object?, Object?>),
+        ));
       case 'load_position':
         final PositionSlot? slot = PositionSlot.fromJson(
           Map<String, dynamic>.from(event['slot'] as Map<Object?, Object?>),
@@ -129,8 +132,8 @@ class _OverlayScreenState extends State<OverlayScreen> {
               shape: g.shape == OverlayShape.circle
                   ? BoxShape.circle
                   : BoxShape.rectangle,
-              border:
-                  Border.all(color: kGold.withAlpha(200), width: _borderWidth),
+              border: Border.all(
+                  color: _vm.style.borderColor, width: _vm.style.borderWidth),
             ),
           ),
         ),

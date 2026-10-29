@@ -3,8 +3,10 @@ import 'dart:ui';
 import 'package:photo_position/data/repositories/position_repository.dart';
 import 'package:photo_position/data/services/overlay_host.dart';
 import 'package:photo_position/data/services/overlay_service.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/ui/home/view_models/home_view_model.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
+import 'package:photo_position/ui/home/view_models/style_view_model.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
 
 /// The only place that decides which implementations the app uses. Both
@@ -24,6 +26,10 @@ class Dependencies {
   final OverlayService Function() _service;
 
   HomeViewModel createHomeViewModel() => HomeViewModel(host: _host());
+
+  StyleViewModel createStyleViewModel(
+          {void Function(OverlayStyle style)? onChanged}) =>
+      StyleViewModel(repository: repository, onChanged: onChanged);
 
   SlotsViewModel createSlotsViewModel() => SlotsViewModel(
         repository: repository,

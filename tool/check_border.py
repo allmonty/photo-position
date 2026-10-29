@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Reads a raw `adb exec-out screencap` from stdin and checks that the gold
-shape border is drawn at the middle of all four edges of the rectangle
-"l t r b" (px, argv[1:5]) with border half-width argv[5] px inside the edge.
+"""Reads a raw `adb exec-out screencap` from stdin and checks that the shape
+border is drawn at the middle of all four edges of the rectangle "l t r b"
+(px, argv[1:5]) with border half-width argv[5] px inside the edge. The border
+is the default gold unless argv[6] gives an opaque colour as RRGGBB hex.
 Exits 1 with a message if any edge is not gold: this catches a shape that the
 window has the right size for but that the Flutter view did not redraw."""
 import struct
@@ -19,8 +20,16 @@ def px(x, y):
     return pix[i], pix[i + 1], pix[i + 2]
 
 
+want = None
+if len(sys.argv) > 6:
+    h = sys.argv[6]
+    want = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
 def gold(c):
-    # border colour is E9C349 at ~78% alpha over the dark background
+    if want is not None:
+        return all(abs(a - b) <= 40 for a, b in zip(c, want))
+    # default border colour is E9C349 at ~78% alpha over the dark background
     return c[0] > 140 and c[1] > 110 and c[2] < 110 and c[0] > c[2] + 60
 
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
@@ -180,6 +181,24 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(service.visibleRect.topLeft, const Offset(100, 200));
+    });
+
+    testWidgets('set_style redraws the border with the new colour and width',
+        (tester) async {
+      await pumpWithMessages(tester);
+      BoxDecoration border() => tester
+          .widget<Container>(find.byKey(overlayShapeContainerKey))
+          .decoration! as BoxDecoration;
+      expect(border().border!.top.width, 5);
+
+      const style =
+          OverlayStyle(borderWidth: 12, borderColor: Color(0xFFFF3B30));
+      messages.add({'action': 'set_style', 'style': style.toJson()});
+      await tester.pump();
+      await tester.pump();
+
+      expect(border().border!.top.width, 12);
+      expect(border().border!.top.color, const Color(0xFFFF3B30));
     });
 
     testWidgets('unknown or malformed messages are ignored', (tester) async {

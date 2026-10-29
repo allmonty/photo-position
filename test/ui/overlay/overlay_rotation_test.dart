@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:photo_position/ui/overlay/view_models/overlay_view_model.dart';
 
@@ -346,6 +347,32 @@ void main() {
       );
       await vm.reopen();
       expect(shapeOnScreen(service, vm), const Rect.fromLTWH(50, 60, 100, 100));
+    });
+  });
+
+  group('border style', () {
+    test('start uses the saved style, setStyle changes it and tells listeners',
+        () async {
+      repo.style =
+          const OverlayStyle(borderWidth: 9, borderColor: Color(0xFF34C759));
+      await startWith(topLeftOnGlass);
+      expect(vm.style, repo.style);
+
+      var notified = 0;
+      vm.addListener(() => notified++);
+      vm.setStyle(const OverlayStyle(borderWidth: 3));
+      expect(vm.style.borderWidth, 3);
+      expect(notified, 1);
+      vm.setStyle(const OverlayStyle(borderWidth: 3));
+      expect(notified, 1, reason: 'same style: nothing to redraw');
+    });
+
+    test('a style chosen while stopped is used by the next start', () async {
+      await startWith(topLeftOnGlass);
+      await vm.close();
+      repo.style = const OverlayStyle(borderWidth: 14);
+      await vm.reopen();
+      expect(vm.style.borderWidth, 14);
     });
   });
 }

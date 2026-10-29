@@ -7,6 +7,7 @@ import 'package:photo_position/data/repositories/position_repository.dart';
 import 'package:photo_position/data/services/overlay_service.dart';
 import 'package:photo_position/domain/geometry.dart';
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 
 enum ResizeAxis { width, height, both }
@@ -35,6 +36,7 @@ class OverlayViewModel extends ChangeNotifier {
   late final StreamSubscription<Size> _screenSub;
 
   OverlayGeometry? _stored;
+  OverlayStyle _style = const OverlayStyle();
   bool _showControls = true;
   bool _isResizing = false;
   bool _closed = false;
@@ -57,6 +59,8 @@ class OverlayViewModel extends ChangeNotifier {
     _stored = displayToGlass(d, _natural, _service.rotation);
   }
 
+  /// Border width and colour chosen on the home screen.
+  OverlayStyle get style => _style;
   bool get showControls => _showControls;
   bool get isResizing => _isResizing;
   bool get closed => _closed;
@@ -76,6 +80,7 @@ class OverlayViewModel extends ChangeNotifier {
     } on Object catch (e) {
       debugPrint('Using the engine\'s own screen size: $e');
     }
+    _style = await _repository.loadStyle();
     final PositionSlot? saved =
         await _repository.loadCurrent(screen: _service.screen);
     if (saved != null) {
@@ -200,6 +205,13 @@ class OverlayViewModel extends ChangeNotifier {
     notifyListeners();
     await _apply();
     await _persist();
+  }
+
+  /// The main app changed the border while the overlay is running.
+  void setStyle(OverlayStyle style) {
+    if (style == _style) return;
+    _style = style;
+    notifyListeners();
   }
 
   void toggleControls() {

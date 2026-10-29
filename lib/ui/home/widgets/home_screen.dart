@@ -7,7 +7,9 @@ import 'package:photo_position/ui/core/theme.dart';
 import 'package:photo_position/ui/core/widgets/art_deco.dart';
 import 'package:photo_position/ui/home/view_models/home_view_model.dart';
 import 'package:photo_position/ui/home/view_models/slots_view_model.dart';
+import 'package:photo_position/ui/home/view_models/style_view_model.dart';
 import 'package:photo_position/ui/home/widgets/slots_section.dart';
+import 'package:photo_position/ui/home/widgets/style_section.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.dependencies});
@@ -21,12 +23,15 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final HomeViewModel _home = widget.dependencies.createHomeViewModel();
   late final SlotsViewModel _slots = widget.dependencies.createSlotsViewModel();
+  late final StyleViewModel _style = widget.dependencies
+      .createStyleViewModel(onChanged: (s) => unawaited(_home.updateStyle(s)));
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_slots.load());
+    unawaited(_style.load());
   }
 
   @override
@@ -34,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _home.dispose();
     _slots.dispose();
+    _style.dispose();
     super.dispose();
   }
 
@@ -121,6 +127,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 const SectionTitle('SAVED POSITIONS'),
                 const SizedBox(height: 12),
                 SlotsSection(viewModel: _slots, onSelect: _home.moveOverlayTo),
+                const SizedBox(height: 24),
+                const ArtDecoDivider(),
+                const SizedBox(height: 24),
+                const SectionTitle('BORDER'),
+                const SizedBox(height: 12),
+                StyleSection(viewModel: _style),
                 const SizedBox(height: 24),
                 const ArtDecoDivider(),
                 const SizedBox(height: 24),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:photo_position/data/services/overlay_host.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 
 /// Starting and stopping the overlay from the main app. Methods that can fail
@@ -55,6 +56,13 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> moveOverlayTo(PositionSlot slot) async {
     if (!_active) return;
     await _host.send({'action': 'load_position', 'slot': slot.toJson()});
+  }
+
+  /// The border changed on the home screen; a running overlay follows live
+  /// (a stopped one reads the saved style when it starts).
+  Future<void> updateStyle(OverlayStyle style) async {
+    if (!_active) return;
+    await _host.send({'action': 'set_style', 'style': style.toJson()});
   }
 
   @override

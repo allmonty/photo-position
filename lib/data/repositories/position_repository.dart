@@ -3,10 +3,12 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:photo_position/domain/models/overlay_geometry.dart';
+import 'package:photo_position/domain/models/overlay_style.dart';
 import 'package:photo_position/domain/models/position_slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists the live overlay geometry and the saved position slots.
+/// Persists the live overlay geometry, the saved position slots and the
+/// overlay's border style.
 ///
 /// Abstract so view models can be tested against an in-memory fake.
 abstract class PositionRepository {
@@ -22,10 +24,15 @@ abstract class PositionRepository {
   /// Always [slotCount] entries; null means empty.
   Future<List<PositionSlot?>> loadSlots();
   Future<void> saveSlot(int index, PositionSlot? slot);
+
+  /// The border style; the default when none was ever chosen.
+  Future<OverlayStyle> loadStyle();
+  Future<void> saveStyle(OverlayStyle style);
 }
 
 class SharedPreferencesPositionRepository implements PositionRepository {
   static const _currentKey = 'overlayGeometry';
+  static const _styleKey = 'overlayStyle';
   static String _slotKey(int i) => 'positionSlot$i';
 
   @override
@@ -67,6 +74,22 @@ class SharedPreferencesPositionRepository implements PositionRepository {
     } else {
       await prefs.setString(_slotKey(index), jsonEncode(slot.toJson()));
     }
+  }
+
+  @override
+  Future<OverlayStyle> loadStyle() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Written by the main app, read by the overlay engine: drop its cache.
+    await prefs.reload();
+    return _decode<OverlayStyle>(
+            prefs.getString(_styleKey), OverlayStyle.fromJson) ??
+        const OverlayStyle();
+  }
+
+  @override
+  Future<void> saveStyle(OverlayStyle style) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_styleKey, jsonEncode(style.toJson()));
   }
 
   static T? _decode<T>(String? raw, T? Function(Object?) parse) {

@@ -21,6 +21,7 @@ iOS: `flutter run -d <simulator-id>` shows the home screen and slots; there is n
 | `flutter test integration_test -d <id>` | rotates the real display; Android emulator or iOS simulator |
 | `tool/rotation_e2e.sh` | Android: starts the real overlay, rotates through all four orientations, asserts a tall rectangle is where the glass says (within 4 px) and its gold border is really drawn there (screenshot sampling, `tool/check_border.py`) |
 | `tool/restart_e2e.sh` | Android: stop and start the overlay twice; it comes back at the same frame, drawn, and still follows a drag |
+| `tool/style_e2e.sh` | Android: pick a red border on the home screen, the running overlay turns red (screenshot sampling), still red after stop/start |
 | `tool/slots_e2e.sh` | Android: saves two slots, loads them, asserts the window frame returns within 2 px |
 
 ## Architecture
@@ -39,6 +40,7 @@ See [CLAUDE.md](../CLAUDE.md) for the layer map. In short: `OverlayViewModel` ow
 | `test/ui/home/slots_test.dart` | slots view model, section, thumbnail |
 | `test/ui/home/home_view_model_test.dart` | start/stop, permission, overlay closing itself, sending a slot |
 | `test/ui/home/home_screen_test.dart` | the home screen on `FakeOverlayHost` |
+| `test/domain/overlay_style_test.dart`, `test/ui/home/style_test.dart` | border style model, view model, home section, live `set_style` |
 | `test/ui/slots_flow_test.dart` | slot save/load through the overlay view model and one repository |
 | `integration_test/rotation_test.dart` | real display rotation on device/simulator |
 
